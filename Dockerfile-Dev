@@ -1,0 +1,42 @@
+FROM --platform=$BUILDPLATFORM golang:1.20-alpine as gost
+
+# Convert TARGETPLATFORM to GOARCH format
+# https://github.com/tonistiigi/xx
+COPY --from=tonistiigi/xx:golang / /
+
+ARG TARGETPLATFORM
+
+RUN apk add --no-cache musl-dev git gcc
+
+WORKDIR /src
+
+RUN git clone https://github.com/ginuerzh/gost.git
+
+ENV GO111MODULE=on
+
+RUN cd gost/cmd/gost && go env && go build -v
+
+FROM docker.io/library/node:alpine
+WORKDIR /app
+
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+COPY --from=golang:1.20-alpine /usr/local/go/ /usr/local/go/
+COPY --from=gost /src/gost/cmd/gost/gost /usr/local/bin/gost
+
+COPY src/ /app/
+
+RUN apk add -U --no-cache \
+  iproute2 iptables net-tools \
+  screen vim curl bash \
+  wireguard-tools \
+  dumb-init \
+  redis
+
+EXPOSE 3000/tcp
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+CMD ["npm", "run", "dev"]
