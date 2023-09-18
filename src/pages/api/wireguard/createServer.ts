@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import safeServe from "@/lib/safe-serve";
+import safeServe from "@lib/safe-serve";
 import { z } from "zod";
 import { IPV4_REGEX } from "@/lib/constants";
 import { client, WG_SEVER_PATH } from "@/lib/redis";

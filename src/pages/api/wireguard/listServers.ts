@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import safeServe from "@/lib/safe-serve";
-import { client, WG_SEVER_PATH } from "@/lib/redis";
+import safeServe from "@lib/safe-serve";
+import { getServers } from "@lib/wireguard";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   return safeServe(res, async () => {
@@ -11,11 +11,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
          .json({ ok: false, details: 'Method not allowed' })
     }
 
-    const servers = await client.lrange(WG_SEVER_PATH, 0, -1)
-
     return res
        .status(200)
-       .json({ ok: true, result: servers.map((s)=> JSON.parse(s)) })
+       .json({
+         ok: true,
+         result: (await getServers()).map((s) => s)
+       })
 
   })
 }

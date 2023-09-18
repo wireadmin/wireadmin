@@ -1,8 +1,8 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "antd";
-import BasePage from "@/components/BasePage";
+import BasePage from "@ui/pages/BasePage";
 
-export default function Home() {
+export default function LoginPage() {
   const { data: session } = useSession();
 
   async function handleSignIn() {

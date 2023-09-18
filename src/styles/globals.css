@@ -1,13 +1,28 @@
 @tailwind base;
+
+@layer base {
+
+  button:not(:not(.ant-btn-primary)),
+  [type='button']:not(:not(.ant-btn-primary)),
+  [type='reset']:not(:not(.ant-btn-primary)),
+  [type='submit']:not(:not(.ant-btn-primary))
+  {
+    background-color: var(--primary-color);
+  }
+
+}
+
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background-rgb: 249, 250, 251;
+  --primary-color: theme('colors.red.800');
 }
 
 body {
   color: rgb(var(--foreground-rgb));
+  background-color: rgb(var(--background-rgb));
 }
+

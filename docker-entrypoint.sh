@@ -18,4 +18,7 @@ fi
 # Starting Redis server in detached mode
 screen -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
 
+# Start Tor in the background
+screen -dmS tor bash -c "tor -f /etc/tor/torrc"
+
 exec "$@"
