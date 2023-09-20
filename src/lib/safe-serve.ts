@@ -7,7 +7,7 @@ export default async function safeServe(res: NextApiResponse, fn: () => void): P
     } catch (e) {
       console.error('[SafeServe]: ', e)
       return res
-         .status(200)
+         .status(500)
          .json({ ok: false, details: 'Server Internal Error' })
     }
   })

@@ -4,7 +4,7 @@ import path from "path";
 export default class FileManager {
 
   static readDirectoryFiles(dir: string): string[] {
-    const files_ = [];
+    const files_: string[] = [];
     const files = fs.readdirSync(dir);
     for (const i in files) {
       const name = dir + '/' + files[i];

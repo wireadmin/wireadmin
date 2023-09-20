@@ -1,214 +1,73 @@
 import { promises as fs } from "fs";
 import path from "path";
-import QRCode from "qrcode";
 import { WG_PATH } from "@lib/constants";
 import Shell from "@lib/shell";
-import { WgKey, WgPeer, WgServer, WgServerConfig } from "@lib/typings";
+import { WgKey, WgPeer, WgServer } from "@lib/typings";
 import { client, WG_SEVER_PATH } from "@lib/redis";
 import { isJson } from "@lib/utils";
+import deepmerge from "deepmerge";
 
-export class WireGuardServer {
+export class WGServer {
 
-  serverId: number
-
-  constructor(serverId: number) {
-    this.serverId = serverId
-  }
-
-  async getConfig() {
-    if (!this.__configPromise) {
-      this.__configPromise = Promise.resolve().then(async () => {
-        if (!WG_HOST) {
-          throw new Error('WG_HOST Environment Variable Not Set!');
-        }
-
-        console.log('Loading configuration...')
-        let config;
-        try {
-          config = await fs.readFile(path.join(WG_PATH, 'wg0.json'), 'utf8');
-          config = JSON.parse(config);
-          console.log('Configuration loaded.')
-        } catch (err) {
-          // const privateKey = await Shell.exec('wg genkey');
-          // const publicKey = await Shell.exec(`echo ${privateKey} | wg pubkey`, {
-          //   log: 'echo ***hidden*** | wg pubkey',
-          // });
-          const { privateKey, publicKey } = await this.genKey()
-          const address = WG_DEFAULT_ADDRESS.replace('x', '1');
-
-          config = {
-            server: {
-              privateKey,
-              publicKey,
-              address,
-            },
-            clients: {},
-          };
-          console.log('Configuration generated.')
-        }
-
-        await this.__saveConfig(config);
-        await Shell.exec('wg-quick down wg0').catch(() => {
-        });
-        await Shell.exec('wg-quick up wg0').catch(err => {
-          if (err && err.message && err.message.includes('Cannot find device "wg0"')) {
-            throw new Error('WireGuard exited with the error: Cannot find device "wg0"\nThis usually means that your host\'s kernel does not support WireGuard!');
-          }
-
-          throw err;
-        });
-        // await Util.exec(`iptables -t nat -A POSTROUTING -s ${WG_DEFAULT_ADDRESS.replace('x', '0')}/24 -o eth0 -j MASQUERADE`);
-        // await Util.exec('iptables -A INPUT -p udp -m udp --dport 51820 -j ACCEPT');
-        // await Util.exec('iptables -A FORWARD -i wg0 -j ACCEPT');
-        // await Util.exec('iptables -A FORWARD -o wg0 -j ACCEPT');
-        await this.__syncConfig();
-
-        return config;
-      });
+  static async stop(id: string): Promise<boolean> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return false
     }
-
-    return this.__configPromise;
+    await Shell.exec(`ip link set down dev wg${server.confId}`, true)
+    await this.update(id, { status: 'down' })
+    return true
   }
 
-  async saveConfig() {
-    const config = await this.getConfig();
-    await this.__saveConfig(config);
-    await this.__syncConfig();
-  }
-
-  async __saveConfig(config: IServerConfig) {
-    let result = `
-[Interface]
-PrivateKey = ${config.privateKey}
-Address = ${config.address}/24
-ListenPort = ${config.listen}
-PreUp = ${config.preUp}
-PostUp = ${config.postUp}
-PreDown = ${config.preDown}
-PostDown = ${config.postDown}
-`;
-
-    for (const { id, ...client } of config.peers) {
-      if (!client.enabled) continue;
-
-      result += `
-
-# Client: ${client.name} (${id})
-[Peer]
-PublicKey = ${client.publicKey}
-PresharedKey = ${client.preSharedKey}
-AllowedIPs = ${client.address}/32`;
+  static async start(id: string): Promise<boolean> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return false
     }
-
-    await fs.writeFile(path.join(WG_PATH, `wg${this.serverId}.conf`), result, {
-      mode: 0o600,
-    });
+    await createInterface(server.confId, server.address)
+    await Shell.exec(`ip link set up dev wg${server.confId}`)
+    await this.update(id, { status: 'up' })
+    return true
   }
 
-  async getClients() {
-    const config = await this.getConfig();
-    const clients = Object.entries(config.clients).map(([ clientId, client ]) => ({
-      id: clientId,
-      name: client.name,
-      enabled: client.enabled,
-      address: client.address,
-      publicKey: client.publicKey,
-      createdAt: new Date(client.createdAt),
-      updatedAt: new Date(client.updatedAt),
-      allowedIPs: client.allowedIPs,
-
-      persistentKeepalive: null,
-      latestHandshakeAt: null,
-      transferRx: null,
-      transferTx: null,
-    }));
-
-    // Loop WireGuard status
-    const dump = await Shell.exec(`wg show wg${this.serverId} dump`);
-    dump
-       .trim()
-       .split('\n')
-       .slice(1)
-       .forEach(line => {
-         const [
-           publicKey,
-           preSharedKey, // eslint-disable-line no-unused-vars
-           endpoint, // eslint-disable-line no-unused-vars
-           allowedIps, // eslint-disable-line no-unused-vars
-           latestHandshakeAt,
-           transferRx,
-           transferTx,
-           persistentKeepalive,
-         ] = line.split('\t');
-
-         const client = clients.find(client => client.publicKey === publicKey);
-         if (!client) return;
-
-         client.latestHandshakeAt = latestHandshakeAt === '0'
-            ? null
-            : new Date(Number(`${latestHandshakeAt}000`));
-         client.transferRx = Number(transferRx);
-         client.transferTx = Number(transferTx);
-         client.persistentKeepalive = persistentKeepalive;
-       });
-
-    return clients;
+  static async remove(id: string): Promise<boolean> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return false
+    }
+    await this.stop(id)
+    await dropInterface(server.confId)
+    await fs.unlink(path.join(WG_PATH, `wg${server.confId}.conf`)).catch(() => null)
+    const index = await findServerIndex(id)
+    console.log('index', index)
+    if (typeof index !== 'number') {
+      console.warn('findServerIndex: index not found')
+      return true
+    } else {
+      await client.lrem(WG_SEVER_PATH, 1, JSON.stringify(server))
+    }
+    return true
   }
 
-  async getClient(clientId: string): Promise<WgPeer> {
-    throw new Error('Yet not implanted!');
-  }
-
-  async getClientConfiguration(clientId: string): Promise<string> {
-    const config = await this.getConfig();
-    const client = await this.getClient(clientId);
-
-    return `
-[Interface]
-PrivateKey = ${client.privateKey}
-Address = ${client.address}/24
-${WG_DEFAULT_DNS ? `DNS = ${WG_DEFAULT_DNS}` : ''}
-${WG_MTU ? `MTU = ${WG_MTU}` : ''}
-
-[Peer]
-PublicKey = ${config.server.publicKey}
-PresharedKey = ${client.preSharedKey}
-AllowedIPs = ${WG_ALLOWED_IPS}
-PersistentKeepalive = ${WG_PERSISTENT_KEEPALIVE}
-Endpoint = ${WG_HOST}:${WG_PORT}`;
-  }
-
-  async getClientQRCodeSVG(clientId: string) {
-    const config = await this.getClientConfiguration(clientId);
-    return QRCode.toString(config, { type: 'svg', width: 512 });
-  }
-
-  async createClient(name: string) {
-    throw new Error('Yet not implanted!');
-  }
-
-  async deleteClient(clientId: string) {
-    throw new Error('Yet not implanted!');
-  }
-
-  async enableClient(clientId: string) {
-    throw new Error('Yet not implanted!');
-  }
-
-  async disableClient(clientId: string) {
-    throw new Error('Yet not implanted!');
-  }
-
-  async updateClientName(clientId: string) {
-    throw new Error('Yet not implanted!');
-  }
-
-  async updateClientAddress(clientId: string, address: string) {
-    throw new Error('Yet not implanted!');
+  static async update(id: string, update: Partial<WgServer>): Promise<boolean> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return false
+    }
+    const index = await findServerIndex(id)
+    if (typeof index !== 'number') {
+      console.warn('findServerIndex: index not found')
+      return true
+    }
+    const res = await client.lset(WG_SEVER_PATH, index, JSON.stringify(deepmerge(server, update)))
+    return res === 'OK'
   }
 
 }
-
 
 /**
  * Used to read /etc/wireguard/*.conf and sync them with our
@@ -216,10 +75,6 @@ Endpoint = ${WG_HOST}:${WG_PORT}`;
  */
 async function syncServers(): Promise<boolean> {
   throw new Error('Yet not implanted!');
-}
-
-export interface IServerConfig extends WgServerConfig {
-  peers: WgPeer[]
 }
 
 export async function generateWgKey(): Promise<WgKey> {
@@ -268,28 +123,79 @@ export async function generateWgServer(config: {
      .map((s) => [ s.address, s.listen ])
 
   // check for the conflict
-  if (addresses.includes(config.address)) {
+  if (Array.isArray(addresses) && addresses.includes(config.address)) {
     throw new Error(`Address ${config.address} is already reserved!`)
   }
 
-  if (ports.includes(config.port)) {
+  if (Array.isArray(addresses) && ports.includes(config.port)) {
     throw new Error(`Port ${config.port} is already reserved!`)
   }
 
   // save server config
   await client.lpush(WG_SEVER_PATH, JSON.stringify(server))
 
+  const CONFIG_PATH = path.join(WG_PATH, `wg${confId}.conf`)
+
   // save server config to disk
-  await fs.writeFile(path.join(WG_PATH, `wg${confId}.conf`), getServerConf(server), {
+  await fs.writeFile(CONFIG_PATH, getServerConf(server), {
     mode: 0o600,
   })
 
-  // restart wireguard
-  await Shell.exec(`wg-quick down wg${confId}`)
-  await Shell.exec(`wg-quick up wg${confId}`)
+  // to ensure interface does not exists
+  await dropInterface(confId)
+  await Shell.exec(`ip link set down dev wg${confId}`, true)
+
+
+  // create a interface
+  await createInterface(confId, config.address)
+
+  // restart WireGuard
+  await Shell.exec(`wg setconf wg${confId} ${CONFIG_PATH}`)
+  await Shell.exec(`ip link set up dev wg${confId}`)
 
   // return server id
   return uuid
+}
+
+/**
+ *   # ip link add dev wg0 type wireguard
+ *   # ip address add dev wg0 10.0.0.1/24
+ *
+ * @param configId
+ * @param address
+ */
+export async function createInterface(configId: number, address: string): Promise<boolean> {
+
+  // first checking for the interface is already exists
+  const interfaces = await Shell.exec(`ip link show | grep wg${configId}`, true)
+  if (interfaces.includes(`wg${configId}`)) {
+    console.error(`failed to create interface, wg${configId} already exists!`)
+    return false
+  }
+
+  // create interface
+  const o1 = await Shell.exec(`ip link add dev wg${configId} type wireguard`)
+  // check if it has error
+  if (o1 !== '') {
+    console.error(`failed to create interface, ${o1}`)
+    return false
+  }
+
+  const o2 = await Shell.exec(`ip address add dev wg${configId} ${address}/24`)
+  // check if it has error
+  if (o2 !== '') {
+    console.error(`failed to assign ip to interface, ${o2}`)
+    console.log(`removing interface wg${configId} due to errors`)
+    await Shell.exec(`ip link delete dev wg${configId}`, true)
+    return false
+  }
+
+  return true
+
+}
+
+export async function dropInterface(configId: number) {
+  await Shell.exec(`ip link delete dev wg${configId}`, true)
 }
 
 export function getServerConf(server: WgServer): string {
@@ -340,10 +246,22 @@ export async function getServers(): Promise<WgServer[]> {
   return (await client.lrange(WG_SEVER_PATH, 0, -1)).map((s) => JSON.parse(s))
 }
 
-export async function findServer(id: string | undefined, hash: string | undefined): Promise<WgServer | undefined> {
+export async function findServerIndex(id: string): Promise<number | undefined> {
+  let index = 0;
+  const servers = await getServers()
+  for (const s of servers) {
+    if (s.id === id) {
+      return index
+    }
+    index++
+  }
+  return undefined
+}
+
+export async function findServer(id: string | undefined, hash?: string): Promise<WgServer | undefined> {
   const servers = await getServers()
   return id ?
-     servers.find((s) => s.id === hash) :
+     servers.find((s) => s.id === id) :
      hash && isJson(hash) ? servers.find((s) => JSON.stringify(s) === hash) :
         undefined
 }

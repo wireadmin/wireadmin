@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Button, Card, List, Segmented } from "antd";
+import { Badge, Button, Card, List } from "antd";
 import BasePage from "@ui/pages/BasePage";
 import { APIResponse, WgServer } from "@lib/typings";
 import { PlusOutlined } from "@ant-design/icons";
@@ -7,8 +7,10 @@ import Image, { ImageProps } from "next/image";
 import Link from "next/link";
 import PageRouter from "@ui/pages/PageRouter";
 import useSWR from "swr";
-import SmartModal, { SmartModalRef } from "@ui/SmartModal";
+import { SmartModalRef } from "@ui/Modal/SmartModal";
 import { twMerge } from "tailwind-merge";
+import CreateServerModal from "@ui/Modal/CreateServerModal";
+import StatusBadge from "@ui/StatusBadge";
 
 export default function Home() {
   const { data, error, isLoading } = useSWR('/api/wireguard/listServers', async (url: string) => {
@@ -33,22 +35,7 @@ export default function Home() {
             </Button>
          )}
        </PageRouter>
-       <SmartModal
-          ref={createServerRef}
-          title={null}
-          footer={null}
-          rootClassName={'w-full max-w-[340px]'}
-       >
-         <div className={'flex items-center justify-center'}>
-           <Segmented
-              className={'select-none'}
-              options={[
-                { label: 'Direct', value: 'default', icon: <i className={'far fa-arrows-left-right-to-line'} /> },
-                { label: 'Tor', value: 'tor', icon: <TorOnion /> }
-              ]}
-           />
-         </div>
-       </SmartModal>
+       <CreateServerModal ref={createServerRef} />
        <div className={'space-y-4'}>
          {error ? (
             <Card className={'flex items-center justify-center p-4'}>
@@ -89,13 +76,9 @@ function Server(s: WgServer) {
      <List.Item className={'flex items-center justify-between p-4'}>
        <div className={'w-full grid grid-cols-12 items-center gap-x-2'}>
          <ServerIcon type={s.type} className={'col-span-1'} />
-         <h3 className={'font-medium col-span-4'}> {s.name} </h3>
+         <span className={'font-medium col-span-4'}> {s.name} </span>
          <div className={'col-span-4 justify-end'}>
-           <Badge
-              size={'small'}
-              color={s.status === 'up' ? 'rgb(82, 196, 26)' : 'rgb(255, 77, 79)'}
-              text={s.status === 'up' ? 'Running' : 'Stopped'}
-           />
+           <StatusBadge status={s.status} />
          </div>
        </div>
        <Link href={`/${s.id}`}>

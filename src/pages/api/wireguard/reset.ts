@@ -24,7 +24,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const m = file.match(reg)
       if (m) {
         const confId = parseInt(m[1])
-        Shell.exec(`wg-quick down wg${confId}`).catch()
+        Shell.exec(`ip link set down dev wg${confId}`).catch()
         fs.unlinkSync(path.join(WG_PATH, file))
       }
     })

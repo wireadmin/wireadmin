@@ -1,20 +1,39 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import safeServe from "@lib/safe-serve";
-import { findServer } from "@lib/wireguard";
+import { findServer, WGServer } from "@lib/wireguard";
+import { z } from "zod";
+import { NameSchema, ServerId } from "@lib/schemas/WireGuard";
+import { WgServer } from "@lib/typings";
+import { zodEnumError, zodErrorToResponse } from "@lib/zod";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return safeServe(res, async () => {
 
+    const parsed = RequestSchema.safeParse(req.query)
+    if (!parsed.success) {
+      return zodErrorToResponse(res, parsed.error)
+    }
+
+    const { serverId } = req.query as z.infer<typeof RequestSchema>
+    const server = await findServer(serverId)
+    if (!server) {
+      return res
+         .status(404)
+         .json({ ok: false, message: 'Not Found' })
+    }
+
     if (req.method === 'GET') {
-      return get(req, res)
+      return res
+         .status(200)
+         .json({ ok: true, result: server })
     }
 
     if (req.method === 'PUT') {
-      return update(req, res)
+      return await update(server, req, res)
     }
 
     if (req.method === 'DELETE') {
-      return remove(req, res)
+      return await remove(server, req, res)
     }
 
     return res
@@ -24,24 +43,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   })
 }
 
-async function get(req: NextApiRequest, res: NextApiResponse) {
+const RequestSchema = z.object({
+  serverId: ServerId
+})
 
-  const server = findServer()
 
-  return res
-     .status(500)
-     .json({ ok: false, details: 'Not yet implemented!' })
+async function update(server: WgServer, req: NextApiRequest, res: NextApiResponse) {
+  return safeServe(res, async () => {
+
+    const parsed = PutRequestSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return zodErrorToResponse(res, parsed.error)
+    }
+
+    const { status } = req.body as z.infer<typeof PutRequestSchema>
+
+    switch (status) {
+      case 'start':
+        await WGServer.start(server.id)
+        break;
+      case 'stop':
+        await WGServer.stop(server.id)
+        break;
+      case 'restart':
+        await WGServer.stop(server.id)
+        await WGServer.start(server.id)
+        break;
+    }
+
+    return res
+       .status(200)
+       .json({ ok: true })
+
+  })
 }
 
-async function update(req: NextApiRequest, res: NextApiResponse) {
-  return res
-     .status(500)
-     .json({ ok: false, details: 'Not yet implemented!' })
-}
+const PutRequestSchema = z.object({
+  name: NameSchema.optional(),
+  status: z
+     .enum(
+        [ 'start', 'stop', 'restart' ],
+        { errorMap: () => zodEnumError('Invalid status') }
+     )
+     .optional(),
+})
 
-async function remove(req: NextApiRequest, res: NextApiResponse) {
-  return res
-     .status(500)
-     .json({ ok: false, details: 'Not yet implemented!' })
+async function remove(server: WgServer, req: NextApiRequest, res: NextApiResponse) {
+  return safeServe(res, async () => {
+    await WGServer.remove(server.id)
+    return res
+       .status(200)
+       .json({ ok: true })
+  })
 }
 
