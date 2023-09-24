@@ -8,20 +8,19 @@ export default NextAuth({
     // get user and password from .env.local
     // https://next-auth.js.org/configuration/providers#credentials-based-authentication-providers
     CredentialsProvider({
-      async authorize(credentials, request) {
-        const { HASHED_PASSWORD } = process.env
-        if (!HASHED_PASSWORD) {
-          return {
-
-          }
-        }
-        const { password } = request.query || {}
-        if (!password ) {
-          return null
-        }
-      },
       name: 'Credentials',
       credentials: {},
+      async authorize(_, request) {
+        const { HASHED_PASSWORD } = process.env
+        if (!HASHED_PASSWORD) {
+          return { id: crypto.randomUUID() }
+        }
+        const { password } = request.query || {}
+        if (!password) {
+          return null
+        }
+        return null
+      }
     }),
 
   ]

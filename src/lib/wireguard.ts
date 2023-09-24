@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { WG_PATH } from "@lib/constants";
 import Shell from "@lib/shell";
-import { WgKey, WgPeer, WgServer } from "@lib/typings";
+import { WgKey, WgServer } from "@lib/typings";
 import { client, WG_SEVER_PATH } from "@lib/redis";
 import { isJson } from "@lib/utils";
 import deepmerge from "deepmerge";
@@ -67,6 +67,176 @@ export class WGServer {
     return res === 'OK'
   }
 
+  static async findAttachedUuid(confId: number): Promise<string | undefined> {
+    const server = await getServers()
+    return server.find((s) => s.confId === confId)?.id
+  }
+
+  static async addPeer(id: string, peer: WgServer['peers'][0]): Promise<boolean> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return false
+    }
+    const peerLines = [
+      `[Peer]`,
+      `PublicKey = ${peer.publicKey}`,
+      `AllowedIPs = ${peer.allowedIps}/32`
+    ]
+    if (peer.persistentKeepalive) {
+      peerLines.push(`PersistentKeepalive = ${peer.persistentKeepalive}`)
+    }
+    if (peer.preSharedKey) {
+      peerLines.push(`PresharedKey = ${peer.preSharedKey}`)
+    }
+    const confPath = path.join(WG_PATH, `wg${server.confId}.conf`)
+    const conf = await fs.readFile(confPath, 'utf-8')
+    const lines = conf.split('\n')
+    lines.push(...peerLines)
+    await fs.writeFile(confPath, lines.join('\n'))
+    await WGServer.update(server.id, {
+      peers: [ ...server.peers, peer ]
+    })
+    await WGServer.stop(server.id)
+    await WGServer.start(server.id)
+    return true
+  }
+
+  static async removePeer(id: string, publicKey: string): Promise<boolean> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return false
+    }
+    const peers = await wgPeersStr(server.confId)
+    const peerIndex = peers.findIndex((p) => p
+       .replace(/\s/g, '')
+       .includes(`PublicKey=${publicKey}`)
+    )
+    if (peerIndex === -1) {
+      console.warn('no peer found')
+      return false
+    }
+    const confPath = path.join(WG_PATH, `wg${server.confId}.conf`)
+    const conf = await fs.readFile(confPath, 'utf-8')
+    const serverConfStr = conf.includes('[Peer]') ?
+       conf.split('[Peer]')[0] :
+       conf
+    const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n')
+    await fs.writeFile(confPath, `${serverConfStr}\n${peersStr}`)
+    await WGServer.update(server.id, {
+      peers: server.peers.filter((_, i) => i !== peerIndex)
+    })
+    await WGServer.stop(server.id)
+    await WGServer.start(server.id)
+    return true
+  }
+
+}
+
+/**
+ * This function is for checking out WireGuard server is running
+ */
+async function wgCheckout(configId: number): Promise<boolean> {
+  const res = await Shell.exec(`ip link show | grep wg${configId}`, true)
+  return res.includes(`wg${configId}`)
+}
+
+export async function readWgConf(configId: number): Promise<WgServer> {
+  const confPath = path.join(WG_PATH, `wg${configId}.conf`)
+  const conf = await fs.readFile(confPath, 'utf-8')
+  const lines = conf.split('\n')
+  const server: WgServer = {
+    id: crypto.randomUUID(),
+    confId: configId,
+    type: 'direct',
+    name: '',
+    address: '',
+    listen: 0,
+    dns: null,
+    privateKey: '',
+    publicKey: '',
+    preUp: null,
+    preDown: null,
+    postDown: null,
+    postUp: null,
+    peers: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: 'down'
+  }
+  let reachedPeers = false
+  for (const line of lines) {
+    const [ key, value ] = line.split('=').map((s) => s.trim())
+    if (reachedPeers) {
+      if (key === '[Peer]') {
+        server.peers.push({
+          publicKey: '',
+          preSharedKey: null,
+          allowedIps: '',
+          persistentKeepalive: null
+        })
+      }
+      if (key === 'PublicKey') {
+        server.peers[server.peers.length - 1].publicKey = value
+      }
+      if (key === 'PresharedKey') {
+        server.peers[server.peers.length - 1].preSharedKey = value
+      }
+      if (key === 'AllowedIPs') {
+        server.peers[server.peers.length - 1].allowedIps = value
+      }
+      if (key === 'PersistentKeepalive') {
+        server.peers[server.peers.length - 1].persistentKeepalive = parseInt(value)
+      }
+    }
+    if (key === 'PrivateKey') {
+      server.privateKey = value
+    }
+    if (key === 'Address') {
+      server.address = value
+    }
+    if (key === 'ListenPort') {
+      server.listen = parseInt(value)
+    }
+    if (key === 'DNS') {
+      server.dns = value
+    }
+    if (key === 'PreUp') {
+      server.preUp = value
+    }
+    if (key === 'PreDown') {
+      server.preDown = value
+    }
+    if (key === 'PostUp') {
+      server.postUp = value
+    }
+    if (key === 'PostDown') {
+      server.postDown = value
+    }
+    if (key === 'PublicKey') {
+      server.publicKey = value
+    }
+    if (key === '[Peer]') {
+      reachedPeers = true
+    }
+  }
+  server.status = await wgCheckout(configId) ? 'up' : 'down'
+  return server
+}
+
+/**
+ * This function checks if a WireGuard config exists in file system
+ * @param configId
+ */
+async function wgConfExists(configId: number): Promise<boolean> {
+  const confPath = path.join(WG_PATH, `wg${configId}.conf`)
+  try {
+    await fs.access(confPath)
+    return true
+  } catch (e) {
+    return false
+  }
 }
 
 /**
@@ -74,7 +244,25 @@ export class WGServer {
  * redis server.
  */
 async function syncServers(): Promise<boolean> {
-  throw new Error('Yet not implanted!');
+  // get files in /etc/wireguard
+  const files = await fs.readdir(WG_PATH)
+  // filter files that start with wg and end with .conf
+  const reg = new RegExp(/^wg(\d+)\.conf$/)
+  const confs = files.filter((f) => reg.test(f))
+  // read all confs
+  const servers = await Promise.all(confs.map((f) => readWgConf(parseInt(f.match(reg)![1]))))
+  // remove old servers
+  await client.del(WG_SEVER_PATH)
+  // save all servers to redis
+  await client.lpush(WG_SEVER_PATH, ...servers.map((s) => JSON.stringify(s)))
+  return true
+}
+
+async function wgPeersStr(configId: number): Promise<string[]> {
+  const confPath = path.join(WG_PATH, `wg${configId}.conf`)
+  const conf = await fs.readFile(confPath, 'utf-8')
+  const rawPeers = conf.split('[Peer]')
+  return rawPeers.slice(1).map((p) => `[Peer]\n${p}`)
 }
 
 export async function generateWgKey(): Promise<WgKey> {
@@ -216,12 +404,12 @@ ${server.peers.map(getPeerConf).join('\n')}
  `
 }
 
-export function getPeerConf(peer: WgPeer): string {
+export function getPeerConf(peer: WgServer['peers'][0]): string {
   return `
 [Peer]
 PublicKey = ${peer.publicKey}
 ${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}` : ''}
-AllowedIPs = ${peer.address}/32
+AllowedIPs = ${peer.allowedIps}/32
 ${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : ''}
  `
 }

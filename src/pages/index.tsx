@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Button, Card, List } from "antd";
+import { Button, Card, List } from "antd";
 import BasePage from "@ui/pages/BasePage";
 import { APIResponse, WgServer } from "@lib/typings";
 import { PlusOutlined } from "@ant-design/icons";
@@ -105,7 +105,7 @@ function ServerIcon(props: ServerIconProps) {
             width={34}
             height={34}
          />
-         {props.type !== 'default' && (
+         {props.type !== 'direct' && (
             <div className={'absolute -bottom-1 -right-2 rounded-full bg-white'}>
               {props.type === 'tor' && (
                  <Image

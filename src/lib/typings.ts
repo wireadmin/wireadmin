@@ -10,14 +10,6 @@ export const WgKeySchema = z.object({
 
 export type WgKey = z.infer<typeof WgKeySchema>
 
-export interface WgPeerConfig {
-  publicKey: string
-  preSharedKey: string
-  endpoint: string
-  allowedIps: string[]
-  persistentKeepalive: number | null
-}
-
 const WgPeerSchema = z.object({
   id: z.string().uuid(),
   name: z.string().regex(/^[A-Za-z\d\s]{3,32}$/),
@@ -39,7 +31,7 @@ export type WgPeer = z.infer<typeof WgPeerSchema>
 export const WgServerSchema = z.object({
   id: z.string().uuid(),
   confId: z.number(),
-  type: z.enum([ 'default', 'bridge', 'tor' ]),
+  type: z.enum([ 'direct', 'bridge', 'tor' ]),
   name: z.string().regex(/^[A-Za-z\d\s]{3,32}$/),
   address: z.string().regex(IPV4_REGEX),
   listen: z.number(),
@@ -48,7 +40,12 @@ export const WgServerSchema = z.object({
   preDown: z.string().nullable(),
   postDown: z.string().nullable(),
   dns: z.string().regex(IPV4_REGEX).nullable(),
-  peers: z.array(WgPeerSchema),
+  peers: z.array(z.object({
+    publicKey: z.string(),
+    preSharedKey: z.string().nullable(),
+    allowedIps: z.string().regex(IPV4_REGEX),
+    persistentKeepalive: z.number().nullable(),
+  })),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   status: z.enum([ 'up', 'down' ]),
