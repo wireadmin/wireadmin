@@ -20,7 +20,7 @@ export default function PageHeader(props: PageHeaderProps) {
 
          <div className={'flex items-center gap-x-2'}>
            <Link
-              href={'https://github.com/shahradelahi/tsetmc-client'}
+              href={'https://github.com/shahradelahi/wireadmin'}
               title={'Giv me a star on Github'}
            >
              <img

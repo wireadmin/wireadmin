@@ -1,14 +1,11 @@
-FROM docker.io/library/node:alpine
+FROM node:alpine as base
 WORKDIR /app
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY --from=golang:1.20-alpine /usr/local/go/ /usr/local/go/
-COPY --from=gogost/gost /bin/gost /usr/local/bin/gost
-
-COPY /src/ /app/
-COPY /config/torrc /etc/tor/torrc
+COPY --from=gogost/gost:3.0.0-rc8 /bin/gost /usr/local/bin/gost
 
 RUN apk add -U --no-cache \
   iproute2 iptables net-tools \
@@ -18,9 +15,16 @@ RUN apk add -U --no-cache \
   tor \
   redis
 
+
+FROM base
+WORKDIR /app
+
+COPY /src/ /app/
+COPY /config/torrc /etc/tor/torrc
+
 EXPOSE 3000/tcp
 
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-ENTRYPOINT ["docker-entrypoint.sh"]
+COPY docker-entrypoint.sh /usr/bin/entrypoint
+ENTRYPOINT ["/usr/bin/entrypoint"]
 
 CMD ["npm", "run", "dev"]

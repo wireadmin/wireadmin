@@ -1,40 +1,53 @@
-FROM docker.io/library/node:alpine AS deps
+FROM node:alpine as base
 WORKDIR /app
+
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+COPY --from=golang:1.20-alpine /usr/local/go/ /usr/local/go/
+COPY --from=gogost/gost:3.0.0-rc8 /bin/gost /usr/local/bin/gost
+
+RUN apk add -U --no-cache \
+  iproute2 iptables net-tools \
+  screen vim curl bash \
+  wireguard-tools \
+  dumb-init \
+  tor \
+  redis
+
+
+FROM node:alpine  as builder
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
+ENV NODE_ENV=production
+COPY /src/ .
+
+RUN npm run build
+
+
+FROM base
+WORKDIR /app
+
+ENV NODE_ENV=production
 
 LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
 
+COPY /config/torrc /etc/tor/torrc
 
-COPY src/package.json src/pnpm-lock.yaml ./
-RUN npm i -g pnpm
-RUN pnpm i --frozen-lockfile
+COPY --from=builder /app/.build ./.build
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/public ./public
 
-# Copy build result to a new image.
-# This saves a lot of disk space.
-FROM docker.io/library/node:alpine as runner
-WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
 
-# Move node_modules one directory up, so during development
-# we don't have to mount it in a volume.
-# This results in much faster reloading!
-#
-# Also, some node_modules might be native, and
-# the architecture & OS of your development machine might differ
-# than what runs inside of docker.
-COPY src/ /app/
-COPY --from=deps /opt/app/node_modules ./node_modules
-
-# Install Linux packages
-RUN apk add -U --no-cache \
-  wireguard-tools \
-  dumb-init \
-  iptables
-
-# Expose UI Ports
 EXPOSE 3000/tcp
 
-# Set Environment
-ENV DEBUG=Server,WireGuard
+COPY docker-entrypoint.sh /usr/bin/entrypoint
+ENTRYPOINT ["/usr/bin/entrypoint"]
 
-# Run Web UI
-WORKDIR /app
-CMD ["/usr/bin/dumb-init", "node", "server.js"]
+CMD ["npm", "run", "start"]

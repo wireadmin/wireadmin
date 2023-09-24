@@ -7,12 +7,10 @@ import useSWRMutation from "swr/mutation";
 import { AddressSchema, DnsSchema, MtuSchema, NameSchema, PortSchema, TypeSchema } from "@lib/schemas/WireGuard";
 import { zodErrorMessage } from "@lib/zod";
 
-export type CreateClientModalProps = {}
-
 const CreateClientModal = React.forwardRef<
    SmartModalRef,
-   CreateClientModalProps
->((props, ref) => {
+   {}
+>((_, ref) => {
 
 
   const [ notificationApi, contextHolder ] = notification.useNotification()
