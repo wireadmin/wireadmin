@@ -21,4 +21,9 @@ screen -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data -
 # Start Tor in the background
 screen -dmS tor bash -c "tor -f /etc/tor/torrc"
 
+# If WG_HOST exists, again export it as NEXT_PUBLIC_WG_HOST
+if [ ! -z "$WG_HOST" ]; then
+  export NEXT_PUBLIC_WG_HOST=$WG_HOST
+fi
+
 exec "$@"

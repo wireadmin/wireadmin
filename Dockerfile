@@ -48,6 +48,7 @@ RUN npm install
 EXPOSE 3000/tcp
 
 COPY docker-entrypoint.sh /usr/bin/entrypoint
+RUN chmod +x /usr/bin/entrypoint
 ENTRYPOINT ["/usr/bin/entrypoint"]
 
 CMD ["npm", "run", "start"]
