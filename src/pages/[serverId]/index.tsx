@@ -4,13 +4,16 @@ import PageRouter from "@ui/pages/PageRouter";
 import React from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import useSWR from "swr";
-import { APIResponse } from "@lib/typings";
+import { APIResponse, WgServer } from "@lib/typings";
 import useSWRMutation from "swr/mutation";
 import { useRouter } from "next/router";
 import { MiddleEllipsis } from "@ui/MiddleEllipsis";
 import StatusBadge from "@ui/StatusBadge";
 import { SmartModalRef } from "@ui/Modal/SmartModal";
 import CreateClientModal from "@ui/Modal/CreateClientModal";
+import { twMerge } from "tailwind-merge";
+import QRCodeModal from "@ui/Modal/QRCodeModal";
+import { getPeerConf } from "@lib/wireguard-utils";
 
 
 export async function getServerSideProps(context: any) {
@@ -31,7 +34,7 @@ export default function ServerPage(props: PageProps) {
 
   const createClientRef = React.useRef<SmartModalRef | null>(null)
 
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate: refresh } = useSWR(
      `/api/wireguard/${props.serverId}`,
      async (url: string) => {
        const resp = await fetch(url, {
@@ -52,7 +55,9 @@ export default function ServerPage(props: PageProps) {
 
   const { isMutating: isChangingStatus, trigger: changeStatus } = useSWRMutation(
      `/api/wireguard/${props.serverId}`,
-     async (url: string, { arg }: { arg: string }) => {
+     async (url: string, { arg }: {
+       arg: string
+     }) => {
        const resp = await fetch(url, {
          method: arg === 'remove' ? 'DELETE' : 'PUT',
          headers: {
@@ -71,10 +76,8 @@ export default function ServerPage(props: PageProps) {
        return true
      },
      {
-       onSuccess: () => {
-       },
-       onError: () => {
-       }
+       onSuccess: async () => await refresh(),
+       onError: async () => await refresh(),
      }
   )
 
@@ -82,7 +85,11 @@ export default function ServerPage(props: PageProps) {
 
   return (
      <BasePage>
-       <CreateClientModal ref={createClientRef} />
+       <CreateClientModal
+          ref={createClientRef}
+          serverId={props.serverId}
+          refreshTrigger={() => refresh()}
+       />
        <PageRouter
           route={[
             { title: data ? data.name.toString() : 'LOADING...' }
@@ -158,21 +165,159 @@ export default function ServerPage(props: PageProps) {
 
             <Card
                className={'[&>.ant-card-body]:p-0'}
-               title={<span> Clients </span>}
+               title={(
+                  <div className={'flex items-center justify-between'}>
+                    <span> Clients </span>
+
+                    {data && data.peers.length > 0 && (
+                       <div>
+                         <Button
+                            type={'primary'}
+                            icon={<PlusOutlined />}
+                            onClick={() => createClientRef.current?.open()}
+                         >
+                           Add a client
+                         </Button>
+                       </div>
+                    )}
+                  </div>
+               )}
             >
-              <div className={'flex flex-col items-center justify-center gap-y-4 py-8'}>
-                <p className={'text-gray-400 text-md'}>
-                  There are no clients yet!
-                </p>
-                <Button type={'primary'} icon={<PlusOutlined />} onClick={() => createClientRef.current?.open()}>
-                  Add a client
-                </Button>
-              </div>
+              {data && data.peers.length > 0 ? (
+                 <List>
+                   {data.peers.map((s) => (
+                      <Client
+                         key={s.id}
+                         {...s}
+                         serverId={props.serverId}
+                         listenPort={data?.listen}
+                         refreshTrigger={() => refresh()}
+                      />
+                   ))}
+                 </List>
+              ) : (
+                 <div className={'flex flex-col items-center justify-center gap-y-4 py-8'}>
+                   <p className={'text-gray-400 text-md'}>
+                     There are no clients yet!
+                   </p>
+                   <Button type={'primary'} icon={<PlusOutlined />} onClick={() => createClientRef.current?.open()}>
+                     Add a client
+                   </Button>
+                 </div>
+              )}
             </Card>
           </div>
        )}
      </BasePage>
   );
+}
+
+type Peer = WgServer['peers'][0]
+
+interface ClientProps extends Peer {
+  serverId: string
+  listenPort: number
+  refreshTrigger: () => void
+}
+
+function Client(props: ClientProps) {
+
+  const qrcodeRef = React.useRef<SmartModalRef | null>(null)
+
+  const [ conf, setConf ] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    setConf(getPeerConf({
+      ...props,
+      port: props.listenPort
+    }))
+    console.log('conf', conf)
+  }, [ props ])
+
+  const { isMutating: removingClient, trigger: removeClient } = useSWRMutation(
+     `/api/wireguard/${props.serverId}/${props.id}`,
+     async (url: string,) => {
+       const resp = await fetch(url, {
+         method: 'DELETE',
+         headers: { 'Content-Type': 'application/json' }
+       })
+       const data = await resp.json() as APIResponse<any>
+       if (!data.ok) throw new Error('Server responded with error status')
+       return true
+     },
+     {
+       onSuccess: () => props.refreshTrigger(),
+       onError: () => props.refreshTrigger()
+     }
+  )
+
+  return (
+     <List.Item className={'flex items-center justify-between p-4'}>
+       <QRCodeModal ref={qrcodeRef} content={conf?.trim() || 'null'} />
+       <div className={'w-full grid grid-cols-12 items-center gap-x-2'}>
+         <div className={'col-span-1 rounded-full bg-gray-200 aspect-square'} />
+         <span className={'font-medium col-span-4'}> {props.name} </span>
+       </div>
+       <div className={'flex items-center justify-center gap-x-3'}>
+         {/* QRCode */}
+         <ClientBaseButton disabled={removingClient} onClick={() => {
+           qrcodeRef.current?.open()
+         }}>
+           <i className={'fal text-neutral-700 group-hover:text-primary fa-qrcode'} />
+         </ClientBaseButton>
+
+         {/* Download */}
+         <ClientBaseButton disabled={removingClient} onClick={() => {
+           if (!conf) {
+             console.error('conf is null')
+             return
+           }
+           console.log('conf', conf)
+           // create a blob
+           const blob = new Blob([ conf ], { type: 'text/plain' })
+           // create a link
+           const link = document.createElement('a')
+           link.href = window.URL.createObjectURL(blob)
+           link.download = `${props.name}.conf`
+           // click the link
+           link.click()
+           // remove the link
+           link.remove()
+         }}>
+           <i className={'fal text-neutral-700 group-hover:text-primary fa-download'} />
+         </ClientBaseButton>
+
+         {/* Remove */}
+         <ClientBaseButton loading={removingClient} onClick={() => removeClient()}>
+           <i className={'fal text-neutral-700 group-hover:text-primary text-lg fa-trash-can'} />
+         </ClientBaseButton>
+       </div>
+     </List.Item>
+  )
+}
+
+function ClientBaseButton(props: {
+  onClick: () => void
+  loading?: boolean
+  disabled?: boolean
+  children: React.ReactNode
+}) {
+  return (
+     <div
+        className={twMerge(
+           'group flex items-center justify-center w-10 aspect-square rounded-md',
+           'bg-gray-200/80 hover:bg-gray-100',
+           'border border-transparent hover:border-primary',
+           'transition-colors duration-200 ease-in-out',
+           'cursor-pointer',
+           props.disabled && 'opacity-50 cursor-not-allowed',
+           props.loading && 'animate-pulse'
+        )}
+        onClick={props.onClick}
+     >
+       {props.children}
+     </div>
+  )
 }
 
 function Row(props: {

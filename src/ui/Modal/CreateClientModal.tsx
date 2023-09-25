@@ -4,13 +4,19 @@ import { Button, Form, Input, notification } from "antd";
 import { z } from "zod";
 import { APIResponse } from "@lib/typings";
 import useSWRMutation from "swr/mutation";
-import { AddressSchema, DnsSchema, MtuSchema, NameSchema, PortSchema, TypeSchema } from "@lib/schemas/WireGuard";
+import { NameSchema } from "@lib/schemas/WireGuard";
 import { zodErrorMessage } from "@lib/zod";
+
+
+type CreateClientModalProps = {
+  serverId: string
+  refreshTrigger: () => void
+}
 
 const CreateClientModal = React.forwardRef<
    SmartModalRef,
-   {}
->((_, ref) => {
+   CreateClientModalProps
+>((props, ref) => {
 
 
   const [ notificationApi, contextHolder ] = notification.useNotification()
@@ -25,7 +31,7 @@ const CreateClientModal = React.forwardRef<
   }, [])
 
   const { isMutating, trigger } = useSWRMutation(
-     '/api/wireguard/createClient',
+     `/api/wireguard/${props.serverId}/createClient`,
      async (url: string, { arg }: { arg: FormValues }) => {
        const resp = await fetch(url, {
          method: 'POST',
@@ -35,11 +41,12 @@ const CreateClientModal = React.forwardRef<
          body: JSON.stringify(arg)
        })
        const data = await resp.json() as APIResponse<any>
-       if (!data.ok) throw new Error('Client responded with error status')
-       return data.result
+       if (!data.ok) throw new Error('Server responded with error status')
+       return true
      },
      {
        onSuccess: () => {
+         props.refreshTrigger()
          notificationApi.success({
            message: 'Success',
            description: (
@@ -52,6 +59,7 @@ const CreateClientModal = React.forwardRef<
          form?.resetFields()
        },
        onError: () => {
+         props.refreshTrigger()
          notificationApi.error({
            message: 'Error',
            description: 'Failed to create Client'
@@ -98,7 +106,7 @@ const CreateClientModal = React.forwardRef<
            <Input placeholder={'Unicorn 🦄'} />
          </Form.Item>
 
-         <Button type={'primary'} htmlType={'submit'} className={'w-full'}>
+         <Button type={'primary'} htmlType={'submit'} className={'w-full'} loading={isMutating}>
            Create
          </Button>
 
@@ -110,12 +118,7 @@ const CreateClientModal = React.forwardRef<
 export default CreateClientModal
 
 const FormSchema = z.object({
-  name: NameSchema,
-  address: AddressSchema,
-  port: PortSchema,
-  type: TypeSchema,
-  dns: DnsSchema,
-  mtu: MtuSchema
+  name: NameSchema
 })
 
 type FormValues = z.infer<typeof FormSchema>

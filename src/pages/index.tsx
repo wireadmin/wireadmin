@@ -13,17 +13,20 @@ import CreateServerModal from "@ui/Modal/CreateServerModal";
 import StatusBadge from "@ui/StatusBadge";
 
 export default function Home() {
-  const { data, error, isLoading } = useSWR('/api/wireguard/listServers', async (url: string) => {
-    const resp = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    const data = await resp.json() as APIResponse<any>
-    if (!data.ok) throw new Error('Server responded with error status')
-    return data.result
-  })
+  const { data, error, isLoading, mutate } = useSWR(
+     '/api/wireguard/listServers',
+     async (url: string) => {
+       const resp = await fetch(url, {
+         method: 'GET',
+         headers: {
+           'Content-Type': 'application/json'
+         }
+       })
+       const data = await resp.json() as APIResponse<any>
+       if (!data.ok) throw new Error('Server responded with error status')
+       return data.result
+     }
+  )
   const createServerRef = React.useRef<SmartModalRef | null>(null)
   return (
      <BasePage>
@@ -35,7 +38,7 @@ export default function Home() {
             </Button>
          )}
        </PageRouter>
-       <CreateServerModal ref={createServerRef} />
+       <CreateServerModal ref={createServerRef} refreshTrigger={() => mutate()} />
        <div className={'space-y-4'}>
          {error ? (
             <Card className={'flex items-center justify-center p-4'}>
@@ -51,7 +54,7 @@ export default function Home() {
                title={<span> Servers </span>}
             >
               <List>
-                {data.map((s) => <Server {...s} />)}
+                {data.map((s) => <Server key={s.id} {...s} />)}
               </List>
             </Card>
          ) : (

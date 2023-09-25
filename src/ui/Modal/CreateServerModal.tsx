@@ -9,7 +9,9 @@ import { isPrivateIP } from "@lib/utils";
 import { AddressSchema, DnsSchema, MtuSchema, NameSchema, PortSchema, TypeSchema } from "@lib/schemas/WireGuard";
 import { zodErrorMessage } from "@lib/zod";
 
-export type CreateServerModalProps = {}
+type CreateServerModalProps = {
+  refreshTrigger: () => void
+}
 
 const CreateServerModal = React.forwardRef<
    SmartModalRef,
@@ -42,6 +44,7 @@ const CreateServerModal = React.forwardRef<
        })
        const data = await resp.json() as APIResponse<any>
        if (!data.ok) throw new Error('Server responded with error status')
+       props.refreshTrigger()
        return data.result
      },
      {
@@ -146,7 +149,7 @@ const CreateServerModal = React.forwardRef<
               defaultValue={type}
               onChange={(v) => setType(v as any)}
               options={[
-                { label: 'Direct', value: 'default', icon: <i className={'fal fa-arrows-left-right-to-line'} /> },
+                { label: 'Direct', value: 'direct', icon: <i className={'fal fa-arrows-left-right-to-line'} /> },
                 { label: 'Tor', value: 'tor', icon: <TorOnion />, disabled: true }
               ]}
            />
@@ -156,7 +159,7 @@ const CreateServerModal = React.forwardRef<
            {
              validator: (_, value) => {
                if (!value) return Promise.resolve()
-               const res = NameSchema.safeParse(value)
+               const res = DnsSchema.safeParse(value)
                if (res.success) return Promise.resolve()
                return Promise.reject(zodErrorMessage(res.error)[0])
              }
@@ -169,7 +172,7 @@ const CreateServerModal = React.forwardRef<
            {
              validator: (_, value) => {
                if (!value) return Promise.resolve()
-               const res = NameSchema.safeParse(value)
+               const res = MtuSchema.safeParse(value)
                if (res.success) return Promise.resolve()
                return Promise.reject(zodErrorMessage(res.error)[0])
              }
@@ -178,7 +181,12 @@ const CreateServerModal = React.forwardRef<
            <Input placeholder={'1420'} />
          </Form.Item>
 
-         <Button type={'primary'} htmlType={'submit'} className={'w-full'}>
+         <Button
+            type={'primary'}
+            htmlType={'submit'}
+            className={'w-full'}
+            loading={isMutating}
+         >
            Create
          </Button>
 

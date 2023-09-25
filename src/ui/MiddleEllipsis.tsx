@@ -19,8 +19,8 @@ export function MiddleEllipsis(props: MiddleEllipsisProps) {
   }, [ maxLength ])
 
   const [ left, right ] = React.useMemo(() => {
-    if (content.length <= maxLength) return [ content, '' ]
-    return [ content.slice(0, leftL), content.slice(content.length - rightL) ]
+    if (content?.length <= maxLength) return [ content, '' ]
+    return [ content.slice(0, leftL), content.slice(content?.length - rightL) ]
   }, [ content, leftL, rightL ])
 
   return (
