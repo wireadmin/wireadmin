@@ -13,16 +13,16 @@ export function getServerConf(server: WgServer): string {
     `${server.postUp ? `PostUp = ${server.postUp}` : 'OMIT'}`,
     `${server.preDown ? `PreDown = ${server.preDown}` : 'OMIT'}`,
     `${server.postDown ? `PostDown = ${server.postDown}` : 'OMIT'}`,
-    ...server.peers.map((peer, index) => ([
-      '',
-      `## ${peer.name || `Peer #${index + 1}`}`,
-      '[Peer]',
-      `PublicKey = ${peer.publicKey}`,
-      `${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}` : 'OMIT'}`,
-      `AllowedIPs = ${peer.allowedIps}/32`,
-      `${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : 'OMIT'}`
-    ]))
   ]
+  server.peers.forEach((peer, index) => {
+    lines.push('')
+    lines.push(`## ${peer.name || `Peer #${index + 1}`}`)
+    lines.push('[Peer]')
+    lines.push(`PublicKey = ${peer.publicKey}`)
+    lines.push(`${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}` : 'OMIT'}`)
+    lines.push(`AllowedIPs = ${peer.allowedIps}/32`)
+    lines.push(`${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : 'OMIT'}`)
+  })
   return lines
      .filter((l) => l !== 'OMIT')
      .join('\n')

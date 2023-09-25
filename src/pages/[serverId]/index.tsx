@@ -252,11 +252,15 @@ function Client(props: ClientProps) {
   )
 
   return (
-     <List.Item className={'flex items-center justify-between p-4'}>
+     <List.Item key={props.id} className={'flex items-center justify-between p-4'}>
        <QRCodeModal ref={qrcodeRef} content={conf?.trim() || 'null'} />
        <div className={'w-full grid grid-cols-12 items-center gap-x-2'}>
-         <div className={'col-span-1 rounded-full bg-gray-200 aspect-square'} />
-         <span className={'font-medium col-span-4'}> {props.name} </span>
+         <div className={'col-span-12 md:col-span-4'}>
+           <span className={'inline-block font-medium'}> {props.name} </span>
+         </div>
+         <div className={'col-span-12 md:col-span-4'}>
+           <span className={'font-mono text-gray-400 text-sm'}> {props.allowedIps} </span>
+         </div>
        </div>
        <div className={'flex items-center justify-center gap-x-3'}>
          {/* QRCode */}

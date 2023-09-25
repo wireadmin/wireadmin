@@ -4,7 +4,7 @@ import { WG_PATH } from "@lib/constants";
 import Shell from "@lib/shell";
 import { WgKey, WgServer } from "@lib/typings";
 import { client, WG_SEVER_PATH } from "@lib/redis";
-import { isJson } from "@lib/utils";
+import { dynaJoin, isJson } from "@lib/utils";
 import deepmerge from "deepmerge";
 import { getPeerConf, getServerConf } from "@lib/wireguard-utils";
 
@@ -66,6 +66,7 @@ export class WGServer {
     }
     const res = await client.lset(WG_SEVER_PATH, index, JSON.stringify({
       ...deepmerge(server, update),
+      peers: update?.peers || server?.peers || [],
       updatedAt: new Date().toISOString()
     }))
     return res === 'OK'
@@ -82,27 +83,32 @@ export class WGServer {
       console.error('server could not be updated (reason: not exists)')
       return false
     }
-    const peerLines = [
-      `[Peer]`,
-      `PublicKey = ${peer.publicKey}`,
-      `AllowedIPs = ${peer.allowedIps}/32`
-    ]
-    if (peer.persistentKeepalive) {
-      peerLines.push(`PersistentKeepalive = ${peer.persistentKeepalive}`)
-    }
-    if (peer.preSharedKey) {
-      peerLines.push(`PresharedKey = ${peer.preSharedKey}`)
-    }
+
     const confPath = path.join(WG_PATH, `wg${server.confId}.conf`)
     const conf = await fs.readFile(confPath, 'utf-8')
     const lines = conf.split('\n')
-    lines.push(...peerLines)
+
+    lines.push(...dynaJoin([
+      `[Peer]`,
+      `PublicKey = ${peer.publicKey}`,
+      peer.preSharedKey && `PresharedKey = ${peer.preSharedKey}`,
+      `AllowedIPs = ${peer.allowedIps}/32`,
+      peer.persistentKeepalive && `PersistentKeepalive = ${peer.persistentKeepalive}`
+    ]))
     await fs.writeFile(confPath, lines.join('\n'))
-    await WGServer.update(server.id, {
+
+    const index = await findServerIndex(id)
+    if (typeof index !== 'number') {
+      console.warn('findServerIndex: index not found')
+      return true
+    }
+    await client.lset(WG_SEVER_PATH, index, JSON.stringify({
+      ...server,
       peers: [ ...server.peers, peer ]
-    })
-    await WGServer.stop(server.id)
-    await WGServer.start(server.id)
+    }))
+
+    await this.stop(server.id)
+    await this.start(server.id)
     return true
   }
 
@@ -327,6 +333,7 @@ export async function generateWgServer(config: {
   port: number
   dns?: string
   mtu?: number
+  insertDb?: boolean
 }): Promise<string> {
 
   const { privateKey, publicKey } = await generateWgKey();
@@ -369,7 +376,9 @@ export async function generateWgServer(config: {
   }
 
   // save server config
-  await client.lpush(WG_SEVER_PATH, JSON.stringify(server))
+  if (false !== config.insertDb) {
+    await client.lpush(WG_SEVER_PATH, JSON.stringify(server))
+  }
 
   const CONFIG_PATH = path.join(WG_PATH, `wg${confId}.conf`)
 

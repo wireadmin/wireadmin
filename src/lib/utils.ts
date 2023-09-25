@@ -39,3 +39,7 @@ export function isPrivateIP(ip: string) {
   const ipRegex = /^(127\.)|(10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(192\.168\.)/
   return ipRegex.test(ip)
 }
+
+export function dynaJoin(lines: (string | 0 | null | undefined)[]): string[] {
+  return lines.filter((d) => typeof d === 'string') as string[]
+}

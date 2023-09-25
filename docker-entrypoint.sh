@@ -12,7 +12,7 @@ ulimit -c 0
 # Checking if there is /data folder
 if [ ! -d "/data" ]; then
   mkdir -p /data
-  chmod 744 /data
+  chmod 700 /data
 fi
 
 # Starting Redis server in detached mode
@@ -25,5 +25,8 @@ screen -dmS tor bash -c "tor -f /etc/tor/torrc"
 if [ ! -z "$WG_HOST" ]; then
   export NEXT_PUBLIC_WG_HOST=$WG_HOST
 fi
+
+# After 5 seconds, export the database to the WireGuard config file
+screen -dm bash -c "sleep 5; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/regen"
 
 exec "$@"
