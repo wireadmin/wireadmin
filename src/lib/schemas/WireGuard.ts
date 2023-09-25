@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { IPV4_REGEX } from "@lib/constants";
 import { isBetween, isPrivateIP } from "@lib/utils";
-import { ZodErrorMap } from "zod/lib/ZodError";
 
 export const NameSchema = z
    .string()
@@ -49,6 +48,10 @@ export const MtuSchema = z
 export const ServerId = z
    .string()
    .uuid({ message: 'Server ID must be a valid UUID' })
+
+export const ClientId = z
+   .string()
+   .uuid({ message: 'Client ID must be a valid UUID' })
 
 export const ServerStatusSchema = z
    .enum([ 'up', 'down' ], {

@@ -2,10 +2,12 @@ import { z } from "zod";
 import type React from "react";
 import { IPV4_REGEX } from "@lib/constants";
 import { NextApiRequest as TNextApiRequest } from "next/dist/shared/lib/utils";
+import { NameSchema } from "@lib/schemas/WireGuard";
 
 export const WgKeySchema = z.object({
   privateKey: z.string(),
   publicKey: z.string(),
+  preSharedKey: z.string(),
 })
 
 export type WgKey = z.infer<typeof WgKeySchema>
@@ -32,7 +34,7 @@ export const WgServerSchema = z.object({
   id: z.string().uuid(),
   confId: z.number(),
   type: z.enum([ 'direct', 'bridge', 'tor' ]),
-  name: z.string().regex(/^[A-Za-z\d\s]{3,32}$/),
+  name: NameSchema,
   address: z.string().regex(IPV4_REGEX),
   listen: z.number(),
   preUp: z.string().nullable(),
@@ -40,17 +42,21 @@ export const WgServerSchema = z.object({
   preDown: z.string().nullable(),
   postDown: z.string().nullable(),
   dns: z.string().regex(IPV4_REGEX).nullable(),
-  peers: z.array(z.object({
-    publicKey: z.string(),
-    preSharedKey: z.string().nullable(),
-    allowedIps: z.string().regex(IPV4_REGEX),
-    persistentKeepalive: z.number().nullable(),
-  })),
+  peers: z.array(
+     z.object({
+       id: z.string().uuid(),
+       name: NameSchema,
+       preSharedKey: z.string().nullable(),
+       allowedIps: z.string().regex(IPV4_REGEX),
+       persistentKeepalive: z.number().nullable(),
+     })
+        .merge(WgKeySchema)
+  ),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   status: z.enum([ 'up', 'down' ]),
 })
-   .merge(WgKeySchema)
+   .merge(WgKeySchema.omit({ preSharedKey: true }))
 
 export type WgServer = z.infer<typeof WgServerSchema>
 
