@@ -50,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       publicKey: peerKeys.publicKey,
       privateKey: peerKeys.privateKey,
       preSharedKey: peerKeys.preSharedKey,
-      persistentKeepalive: 25,
+      persistentKeepalive: 0,
     })
     if (!addedPeer) {
       return res

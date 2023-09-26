@@ -16,7 +16,10 @@ export class WGServer {
       console.error('server could not be updated (reason: not exists)')
       return false
     }
-    await Shell.exec(`ip link set down dev wg${server.confId}`, true)
+
+    await Shell.exec(`wg-quick down wg${server.confId}`, true)
+    await dropInterface(server.confId)
+
     await this.update(id, { status: 'down' })
     return true
   }
@@ -27,8 +30,10 @@ export class WGServer {
       console.error('server could not be updated (reason: not exists)')
       return false
     }
-    await createInterface(server.confId, server.address)
-    await Shell.exec(`ip link set up dev wg${server.confId}`)
+
+    await Shell.exec(`wg-quick down wg${server.confId}`, true)
+    await Shell.exec(`wg-quick up wg${server.confId}`)
+
     await this.update(id, { status: 'up' })
     return true
   }
@@ -189,7 +194,12 @@ export class WGServer {
       console.error('generatePeerConfig: peer not found')
       return undefined
     }
-    return getPeerConf({ ...peer, port: server.listen })
+    return getPeerConf({
+      ...peer,
+      serverPublicKey: server.publicKey,
+      port: server.listen,
+      dns: server.dns
+    })
   }
 
 }
@@ -402,16 +412,14 @@ export async function generateWgServer(config: {
   })
 
   // to ensure interface does not exists
+  await Shell.exec(`wg-quick down wg${confId}`, true)
   await dropInterface(confId)
-  await Shell.exec(`ip link set down dev wg${confId}`, true)
-
 
   // create a interface
-  await createInterface(confId, config.address)
+  // await createInterface(confId, config.address)
 
   // restart WireGuard
-  await Shell.exec(`wg setconf wg${confId} ${CONFIG_PATH}`)
-  await Shell.exec(`ip link set up dev wg${confId}`)
+  await Shell.exec(`wg-quick up wg${confId}`)
 
   // return server id
   return uuid
@@ -502,7 +510,7 @@ async function makeWgIptables(s: WgServer): Promise<{
   up: string
   down: string
 }> {
-  const inet = Shell.exec('ip route | grep default | grep -oP "(?<=dev )[^ ]+"')
+  const inet = await Shell.exec('ip route list default | awk \'{print $5}\'')
   const wgAddress = `${s.address}/24`
   const wgInet = `wg${s.confId}`
 

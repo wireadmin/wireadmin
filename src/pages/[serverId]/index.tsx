@@ -190,6 +190,8 @@ export default function ServerPage(props: PageProps) {
                          key={s.id}
                          {...s}
                          serverId={props.serverId}
+                         serverPublicKey={data?.publicKey}
+                         dns={data?.dns}
                          listenPort={data?.listen}
                          refreshTrigger={() => refresh()}
                       />
@@ -214,8 +216,9 @@ export default function ServerPage(props: PageProps) {
 
 type Peer = WgServer['peers'][0]
 
-interface ClientProps extends Peer {
+interface ClientProps extends Peer, Pick<WgServer, 'dns'> {
   serverId: string
+  serverPublicKey: string
   listenPort: number
   refreshTrigger: () => void
 }
@@ -229,7 +232,9 @@ function Client(props: ClientProps) {
   React.useEffect(() => {
     setConf(getPeerConf({
       ...props,
-      port: props.listenPort
+      serverPublicKey: props.serverPublicKey,
+      port: props.listenPort,
+      dns: props.dns,
     }))
     console.log('conf', conf)
   }, [ props ])
@@ -254,12 +259,18 @@ function Client(props: ClientProps) {
   return (
      <List.Item key={props.id} className={'flex items-center justify-between p-4'}>
        <QRCodeModal ref={qrcodeRef} content={conf?.trim() || 'null'} />
-       <div className={'w-full grid grid-cols-12 items-center gap-x-2'}>
-         <div className={'col-span-12 md:col-span-4'}>
-           <span className={'inline-block font-medium'}> {props.name} </span>
+       <div className={'w-full flex flex-row items-center gap-x-2'}>
+         <div className={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200'}>
+           {/* User Icon */}
+           <i className={'fas fa-user text-gray-400 text-lg'} />
          </div>
          <div className={'col-span-12 md:col-span-4'}>
-           <span className={'font-mono text-gray-400 text-sm'}> {props.allowedIps} </span>
+           <div className={'col-span-12 md:col-span-4'}>
+             <span className={'inline-block font-medium'}> {props.name} </span>
+           </div>
+           <div className={'col-span-12 md:col-span-4'}>
+             <span className={'font-mono text-gray-400 text-xs'}> {props.allowedIps} </span>
+           </div>
          </div>
        </div>
        <div className={'flex items-center justify-center gap-x-3'}>
@@ -310,7 +321,7 @@ function ClientBaseButton(props: {
      <div
         className={twMerge(
            'group flex items-center justify-center w-10 aspect-square rounded-md',
-           'bg-gray-200/80 hover:bg-gray-100',
+           'bg-gray-200/80 hover:bg-gray-100/50',
            'border border-transparent hover:border-primary',
            'transition-colors duration-200 ease-in-out',
            'cursor-pointer',

@@ -4,9 +4,6 @@ services:
     image: wireadmin
     volumes:
       - ./src/:/app/
-    ports:
-      - "4040:4040/udp" # Direct
-      - "4050:4050/udp" # Tor
     environment:
       - UI_PASSWORD=password
-      - WG_HOST=127.0.0.1
+      - WG_HOST=192.168.1.102

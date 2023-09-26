@@ -24,7 +24,7 @@ const CreateServerModal = React.forwardRef<
   const innerRef = React.useRef<SmartModalRef | null>(null)
   const [ form ] = Form.useForm()
 
-  const [ type, setType ] = React.useState<'default' | 'tor'>('default')
+  const [ type, setType ] = React.useState<ServerType>('direct')
 
   React.useImperativeHandle(ref, () => innerRef.current as SmartModalRef)
 
@@ -205,5 +205,7 @@ const FormSchema = z.object({
   dns: DnsSchema,
   mtu: MtuSchema
 })
+
+type ServerType = z.infer<typeof TypeSchema>
 
 type FormValues = z.infer<typeof FormSchema>

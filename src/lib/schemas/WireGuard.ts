@@ -29,7 +29,7 @@ export const PortSchema = z
      message: 'Port must be a valid port number'
    })
 
-export const TypeSchema = z.enum([ 'default', 'tor' ])
+export const TypeSchema = z.enum([ 'direct', 'tor' ])
 
 export const DnsSchema = z
    .string()

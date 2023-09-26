@@ -9,7 +9,9 @@ function publicENV(ex = {}) {
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [],
-  env: publicENV()
+  env: publicENV({
+    NEXT_PUBLIC_WG_HOST: process.env.WG_HOST
+  })
 }
 
 module.exports = nextConfig;

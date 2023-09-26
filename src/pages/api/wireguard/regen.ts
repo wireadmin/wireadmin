@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import safeServe from "@lib/safe-serve";
-import { getServers } from "@lib/wireguard";
+import { getServers, WGServer } from "@lib/wireguard";
 import { getServerConf } from "@lib/wireguard-utils";
 import fs from "fs";
 import path from "path";
@@ -17,10 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const servers = await getServers()
 
-    servers.forEach((s) => {
+    for (const s of servers) {
       const CONFIG_PATH = path.join(WG_PATH, `wg${s.confId}.conf`)
       fs.writeFileSync(CONFIG_PATH, getServerConf(s), { mode: 0o600 })
-    })
+      await WGServer.start(s.id)
+    }
 
     return res
        .status(200)
