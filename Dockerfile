@@ -19,7 +19,7 @@ RUN apk add -U --no-cache \
 FROM node:alpine  as builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY /src/package.json /src/package-lock.json ./
 RUN npm install
 
 ENV NODE_ENV=production
@@ -37,13 +37,12 @@ LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
 
 COPY /config/torrc /etc/tor/torrc
 
-COPY --from=builder /app/.build ./.build
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/public ./public
 
-COPY package.json package-lock.json ./
-RUN npm install
+COPY /src/package.json /src/package-lock.json ./
+RUN npm install --omit dev
 
 EXPOSE 3000/tcp
 
