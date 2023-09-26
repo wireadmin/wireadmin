@@ -39,17 +39,26 @@ export class WGServer {
       console.error('server could not be updated (reason: not exists)')
       return false
     }
+
     await this.stop(id)
     await dropInterface(server.confId)
-    await fs.unlink(path.join(WG_PATH, `wg${server.confId}.conf`)).catch(() => null)
+    await fs.unlink(path.join(WG_PATH, `wg${server.confId}.conf`))
+       .catch(() => null)
+
     const index = await findServerIndex(id)
-    console.log('index', index)
     if (typeof index !== 'number') {
       console.warn('findServerIndex: index not found')
       return true
-    } else {
-      await client.lrem(WG_SEVER_PATH, 1, JSON.stringify(server))
     }
+
+    const element = await client.lindex(WG_SEVER_PATH, index)
+    if (!element) {
+      console.warn('remove: element not found')
+      return true
+    }
+
+    await client.lrem(WG_SEVER_PATH, 1, element)
+
     return true
   }
 
@@ -342,7 +351,7 @@ export async function generateWgServer(config: {
   const confId = await maxConfId() + 1
   const uuid = crypto.randomUUID()
 
-  const server: WgServer = {
+  let server: WgServer = {
     id: uuid,
     confId,
     type: config.type,
@@ -374,6 +383,11 @@ export async function generateWgServer(config: {
   if (Array.isArray(addresses) && ports.includes(config.port)) {
     throw new Error(`Port ${config.port} is already reserved!`)
   }
+
+  // setting iptables
+  const iptables = await makeWgIptables(server)
+  server.postUp = iptables.up
+  server.postDown = iptables.down
 
   // save server config
   if (false !== config.insertDb) {
@@ -482,4 +496,41 @@ export async function findServer(id: string | undefined, hash?: string): Promise
      servers.find((s) => s.id === id) :
      hash && isJson(hash) ? servers.find((s) => JSON.stringify(s) === hash) :
         undefined
+}
+
+async function makeWgIptables(s: WgServer): Promise<{
+  up: string
+  down: string
+}> {
+  const inet = Shell.exec('ip route | grep default | grep -oP "(?<=dev )[^ ]+"')
+  const wgAddress = `${s.address}/24`
+  const wgInet = `wg${s.confId}`
+
+  if (s.type === 'direct') {
+    const up = dynaJoin([
+      `iptables -t nat -A POSTROUTING -s ${wgAddress} -o ${inet} -j MASQUERADE`,
+      `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
+      `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
+      `iptables -A FORWARD -i ${wgInet} -j ACCEPT`,
+      `iptables -A FORWARD -o ${wgInet} -j ACCEPT`,
+    ]).join('; ')
+    return { up, down: up.replace(/ -A /g, ' -D ') }
+  }
+
+  if (s.type === 'tor') {
+    const up = dynaJoin([
+      `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
+      `iptables -A INPUT -i ${wgInet} -m state --state NEW -j ACCEPT`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:53530`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p tcp -j DNAT --to-destination 127.0.0.1:9040`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -j DNAT --to-destination 127.0.0.1:9040`,
+      `iptables -t nat -A OUTPUT -o lo -j RETURN`,
+      `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
+      `iptables -A OUTPUT -m state --state INVALID -j DROP`,
+      `iptables -A OUTPUT ! -o lo ! -d 127.0.0.1 ! -s 127.0.0.1 -p tcp -m tcp --tcp-flags ACK,FIN ACK,FIN -j DROP`,
+    ]).join('; ')
+    return { up, down: up.replace(/-A/g, '-D') }
+  }
+
+  return { up: '', down: '' }
 }

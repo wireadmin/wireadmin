@@ -150,7 +150,7 @@ const CreateServerModal = React.forwardRef<
               onChange={(v) => setType(v as any)}
               options={[
                 { label: 'Direct', value: 'direct', icon: <i className={'fal fa-arrows-left-right-to-line'} /> },
-                { label: 'Tor', value: 'tor', icon: <TorOnion />, disabled: true }
+                { label: 'Tor', value: 'tor', icon: <TorOnion width={18} height={18} /> }
               ]}
            />
          </Form.Item>
