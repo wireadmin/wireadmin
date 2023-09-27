@@ -230,12 +230,14 @@ function Client(props: ClientProps) {
   const [ conf, setConf ] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    setConf(getPeerConf({
+    getPeerConf({
       ...props,
       serverPublicKey: props.serverPublicKey,
       port: props.listenPort,
       dns: props.dns,
-    }))
+    })
+       .then((s) => setConf(s))
+
     console.log('conf', conf)
   }, [ props ])
 

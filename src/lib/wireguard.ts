@@ -7,6 +7,7 @@ import { client, WG_SEVER_PATH } from "@lib/redis";
 import { dynaJoin, isJson } from "@lib/utils";
 import deepmerge from "deepmerge";
 import { getPeerConf, getServerConf } from "@lib/wireguard-utils";
+import Network from "@lib/network";
 
 export class WGServer {
 
@@ -18,7 +19,6 @@ export class WGServer {
     }
 
     await Shell.exec(`wg-quick down wg${server.confId}`, true)
-    await dropInterface(server.confId)
 
     await this.update(id, { status: 'down' })
     return true
@@ -46,9 +46,7 @@ export class WGServer {
     }
 
     await this.stop(id)
-    await dropInterface(server.confId)
-    await fs.unlink(path.join(WG_PATH, `wg${server.confId}.conf`))
-       .catch(() => null)
+    await fs.unlink(path.join(WG_PATH, `wg${server.confId}.conf`)).catch(() => null)
 
     const index = await findServerIndex(id)
     if (typeof index !== 'number') {
@@ -194,7 +192,7 @@ export class WGServer {
       console.error('generatePeerConfig: peer not found')
       return undefined
     }
-    return getPeerConf({
+    return await getPeerConf({
       ...peer,
       serverPublicKey: server.publicKey,
       port: server.listen,
@@ -413,57 +411,12 @@ export async function generateWgServer(config: {
 
   // to ensure interface does not exists
   await Shell.exec(`wg-quick down wg${confId}`, true)
-  await dropInterface(confId)
-
-  // create a interface
-  // await createInterface(confId, config.address)
 
   // restart WireGuard
   await Shell.exec(`wg-quick up wg${confId}`)
 
   // return server id
   return uuid
-}
-
-/**
- *   # ip link add dev wg0 type wireguard
- *   # ip address add dev wg0 10.0.0.1/24
- *
- * @param configId
- * @param address
- */
-export async function createInterface(configId: number, address: string): Promise<boolean> {
-
-  // first checking for the interface is already exists
-  const interfaces = await Shell.exec(`ip link show | grep wg${configId}`, true)
-  if (interfaces.includes(`wg${configId}`)) {
-    console.error(`failed to create interface, wg${configId} already exists!`)
-    return false
-  }
-
-  // create interface
-  const o1 = await Shell.exec(`ip link add dev wg${configId} type wireguard`)
-  // check if it has error
-  if (o1 !== '') {
-    console.error(`failed to create interface, ${o1}`)
-    return false
-  }
-
-  const o2 = await Shell.exec(`ip address add dev wg${configId} ${address}/24`)
-  // check if it has error
-  if (o2 !== '') {
-    console.error(`failed to assign ip to interface, ${o2}`)
-    console.log(`removing interface wg${configId} due to errors`)
-    await Shell.exec(`ip link delete dev wg${configId}`, true)
-    return false
-  }
-
-  return true
-
-}
-
-export async function dropInterface(configId: number) {
-  await Shell.exec(`ip link delete dev wg${configId}`, true)
 }
 
 export async function maxConfId(): Promise<number> {
@@ -506,17 +459,14 @@ export async function findServer(id: string | undefined, hash?: string): Promise
         undefined
 }
 
-async function makeWgIptables(s: WgServer): Promise<{
-  up: string
-  down: string
-}> {
-  const inet = await Shell.exec('ip route list default | awk \'{print $5}\'')
-  const wgAddress = `${s.address}/24`
+async function makeWgIptables(s: WgServer): Promise<{ up: string, down: string }> {
+  const inet = await Network.defaultInterface()
+  const source = `${s.address}/24`
   const wgInet = `wg${s.confId}`
 
   if (s.type === 'direct') {
     const up = dynaJoin([
-      `iptables -t nat -A POSTROUTING -s ${wgAddress} -o ${inet} -j MASQUERADE`,
+      `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
       `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
       `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
       `iptables -A FORWARD -i ${wgInet} -j ACCEPT`,
@@ -528,10 +478,10 @@ async function makeWgIptables(s: WgServer): Promise<{
   if (s.type === 'tor') {
     const up = dynaJoin([
       `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
-      `iptables -A INPUT -i ${wgInet} -m state --state NEW -j ACCEPT`,
-      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:53530`,
-      `iptables -t nat -A PREROUTING -i ${wgInet} -p tcp -j DNAT --to-destination 127.0.0.1:9040`,
-      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -j DNAT --to-destination 127.0.0.1:9040`,
+      `iptables -A INPUT -i ${wgInet} -s ${source} -m state --state NEW -j ACCEPT`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -s ${source} --dport 53 -j DNAT --to-destination 10.8.0.1:53530`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p tcp -s ${source} -j DNAT --to-destination 10.8.0.1:9040`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -s ${source} -j DNAT --to-destination 10.8.0.1:9040`,
       `iptables -t nat -A OUTPUT -o lo -j RETURN`,
       `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
       `iptables -A OUTPUT -m state --state INVALID -j DROP`,
