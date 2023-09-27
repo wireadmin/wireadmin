@@ -1,4 +1,4 @@
-#!/usr/bin/dumb-init /bin/sh
+#!/usr/bin/dumb-init /bin/bash
 set -e
 
 # Note above that we run dumb-init as PID 1 in order to reap zombie processes
@@ -24,6 +24,6 @@ screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor"
 screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
 
 # After 5 seconds, export the database to the WireGuard config file
-screen -dm bash -c "sleep 5; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/regen"
+bash -c "sleep 5; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/regen"&
 
 exec "$@"

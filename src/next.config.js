@@ -10,7 +10,7 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [],
   env: publicENV({
-    NEXT_PUBLIC_WG_HOST: process.env.WG_HOST
+    NEXT_PUBLIC_WG_HOST: process.env?.WG_HOST
   })
 }
 

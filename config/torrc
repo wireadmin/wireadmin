@@ -1,5 +1,5 @@
 VirtualAddrNetwork 10.192.0.0/10
 SOCKSPort 9055
 ControlPort 9051
-DNSPort 10.8.0.1:53530
-TransPort 10.8.0.1:9040
+DNSPort 53530
+TransPort 9040

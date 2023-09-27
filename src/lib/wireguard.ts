@@ -479,9 +479,9 @@ async function makeWgIptables(s: WgServer): Promise<{ up: string, down: string }
     const up = dynaJoin([
       `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
       `iptables -A INPUT -i ${wgInet} -s ${source} -m state --state NEW -j ACCEPT`,
-      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -s ${source} --dport 53 -j DNAT --to-destination 10.8.0.1:53530`,
-      `iptables -t nat -A PREROUTING -i ${wgInet} -p tcp -s ${source} -j DNAT --to-destination 10.8.0.1:9040`,
-      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -s ${source} -j DNAT --to-destination 10.8.0.1:9040`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -s ${source} --dport 53 -j DNAT --to-destination 127.0.0.1:53530`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p tcp -s ${source} -j DNAT --to-destination 127.0.0.1:9040`,
+      `iptables -t nat -A PREROUTING -i ${wgInet} -p udp -s ${source} -j DNAT --to-destination 127.0.0.1:9040`,
       `iptables -t nat -A OUTPUT -o lo -j RETURN`,
       `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
       `iptables -A OUTPUT -m state --state INVALID -j DROP`,
