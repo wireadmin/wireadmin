@@ -13,7 +13,13 @@ export default class Shell {
          { shell: 'bash' },
          (err, stdout, stderr) => {
            if (err) {
-             console.error('Shell Exec:', err, stderr);
+             console.error('Shell Command Failed:');
+             console.error({
+               command: cmd,
+               code: err.code,
+               killed: err.killed,
+               stderr
+             })
              return safe ? resolve('') : reject(err);
            }
            return resolve(String(stdout).trim());
