@@ -11,6 +11,10 @@ import { SmartModalRef } from "@ui/Modal/SmartModal";
 import { twMerge } from "tailwind-merge";
 import CreateServerModal from "@ui/Modal/CreateServerModal";
 import StatusBadge from "@ui/StatusBadge";
+import EditableText from "@ui/EditableText";
+import useSWRMutation from "swr/mutation";
+import { UPDATE_SERVER } from "@lib/swr-fetch";
+import { RLS_NAME_INPUT } from "@lib/form-rules";
 
 export default function Home() {
   const { data, error, isLoading, mutate } = useSWR(
@@ -18,11 +22,9 @@ export default function Home() {
      async (url: string) => {
        const resp = await fetch(url, {
          method: 'GET',
-         headers: {
-           'Content-Type': 'application/json'
-         }
+         headers: { 'Content-Type': 'application/json' }
        })
-       const data = await resp.json() as APIResponse<any>
+       const data = await resp.json() as APIResponse<WgServer[]>
        if (!data.ok) throw new Error('Server responded with error status')
        return data.result
      }
@@ -48,13 +50,19 @@ export default function Home() {
             <Card className={'flex items-center justify-center p-4'}>
               Loading...
             </Card>
-         ) : data.length > 0 ? (
+         ) : Array.isArray(data) && data.length > 0 ? (
             <Card
                className={'[&>.ant-card-body]:p-0'}
                title={<span> Servers </span>}
             >
               <List>
-                {data.map((s) => <Server key={s.id} {...s} />)}
+                {data.map((s) => (
+                   <ServerListItem
+                      {...s}
+                      key={s.id}
+                      refreshTrigger={() => mutate()}
+                   />
+                ))}
               </List>
             </Card>
          ) : (
@@ -74,17 +82,38 @@ export default function Home() {
   );
 }
 
-function Server(s: WgServer) {
+interface ServerListItemProps extends WgServer {
+  refreshTrigger: () => void
+}
+
+function ServerListItem(props: ServerListItemProps) {
+
+  const { isMutating, trigger } = useSWRMutation(
+     `/api/wireguard/${props.id}`,
+     UPDATE_SERVER,
+     {
+       onSuccess: () => props.refreshTrigger(),
+       onError: () => props.refreshTrigger(),
+     }
+  )
+
   return (
      <List.Item className={'flex items-center justify-between p-4'}>
        <div className={'w-full grid grid-cols-12 items-center gap-x-2'}>
-         <ServerIcon type={s.type} className={'col-span-1'} />
-         <span className={'font-medium col-span-4'}> {s.name} </span>
+         <ServerIcon type={props.type} className={'col-span-1'} />
+         <EditableText
+            disabled={isMutating}
+            rules={RLS_NAME_INPUT}
+            rootClassName={'font-medium col-span-4'}
+            inputClassName={'w-20'}
+            content={props.name}
+            onChange={(v) => trigger({ name: v })}
+         />
          <div className={'col-span-4 justify-end'}>
-           <StatusBadge status={s.status} />
+           <StatusBadge status={props.status} />
          </div>
        </div>
-       <Link href={`/${s.id}`}>
+       <Link href={`/${props.id}`}>
          <Button type={'primary'}>
            Manage
          </Button>

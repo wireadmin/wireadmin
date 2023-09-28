@@ -6,6 +6,7 @@ import { APIResponse } from "@lib/typings";
 import useSWRMutation from "swr/mutation";
 import { NameSchema } from "@lib/schemas/WireGuard";
 import { zodErrorMessage } from "@lib/zod";
+import { RLS_NAME_INPUT } from "@lib/form-rules";
 
 
 type CreateClientModalProps = {
@@ -89,20 +90,7 @@ const CreateClientModal = React.forwardRef<
        <h4 className={'mb-6'}> Create Client </h4>
        <Form form={form} onFinish={onFinish}>
 
-         <Form.Item name={'name'} label={'Name'} rules={[
-           {
-             required: true,
-             message: 'Name is required'
-           },
-           {
-             validator: (_, value) => {
-               if (!value) return Promise.resolve()
-               const res = NameSchema.safeParse(value)
-               if (res.success) return Promise.resolve()
-               return Promise.reject(zodErrorMessage(res.error)[0])
-             }
-           }
-         ]}>
+         <Form.Item name={'name'} label={'Name'} rules={RLS_NAME_INPUT}>
            <Input placeholder={'Unicorn 🦄'} />
          </Form.Item>
 

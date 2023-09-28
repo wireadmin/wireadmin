@@ -56,7 +56,7 @@ async function update(server: WgServer, req: NextApiRequest, res: NextApiRespons
       return zodErrorToResponse(res, parsed.error)
     }
 
-    const { status } = req.body as z.infer<typeof PutRequestSchema>
+    const { status, name } = req.body as z.infer<typeof PutRequestSchema>
 
     switch (status) {
       case 'start':
@@ -69,6 +69,10 @@ async function update(server: WgServer, req: NextApiRequest, res: NextApiRespons
         await WGServer.stop(server.id)
         await WGServer.start(server.id)
         break;
+    }
+
+    if (name) {
+      await WGServer.update(server.id, { name })
     }
 
     return res

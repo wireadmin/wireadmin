@@ -30,6 +30,17 @@ const WgPeerSchema = z.object({
 
 export type WgPeer = z.infer<typeof WgPeerSchema>
 
+export const PeerSchema = z.object({
+  id: z.string().uuid(),
+  name: NameSchema,
+  preSharedKey: z.string().nullable(),
+  allowedIps: z.string().regex(IPV4_REGEX),
+  persistentKeepalive: z.number().nullable(),
+})
+   .merge(WgKeySchema)
+
+export type Peer = z.infer<typeof PeerSchema>
+
 export const WgServerSchema = z.object({
   id: z.string().uuid(),
   confId: z.number(),
@@ -42,16 +53,7 @@ export const WgServerSchema = z.object({
   preDown: z.string().nullable(),
   postDown: z.string().nullable(),
   dns: z.string().regex(IPV4_REGEX).nullable(),
-  peers: z.array(
-     z.object({
-       id: z.string().uuid(),
-       name: NameSchema,
-       preSharedKey: z.string().nullable(),
-       allowedIps: z.string().regex(IPV4_REGEX),
-       persistentKeepalive: z.number().nullable(),
-     })
-        .merge(WgKeySchema)
-  ),
+  peers: z.array(PeerSchema),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   status: z.enum([ 'up', 'down' ]),

@@ -68,7 +68,7 @@ async function update(server: WgServer, peer: Peer, req: NextApiRequest, res: Ne
     const { name } = req.body as z.infer<typeof PutRequestSchema>
 
     if (name) {
-      await WGServer.update(server.id, { name })
+      await WGServer.updatePeer(server.id, peer.publicKey, { name })
     }
 
     return res

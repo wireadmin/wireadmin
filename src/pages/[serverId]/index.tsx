@@ -4,7 +4,7 @@ import PageRouter from "@ui/pages/PageRouter";
 import React from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import useSWR from "swr";
-import { APIResponse, WgServer } from "@lib/typings";
+import { APIResponse, Peer, WgServer } from "@lib/typings";
 import useSWRMutation from "swr/mutation";
 import { useRouter } from "next/router";
 import { MiddleEllipsis } from "@ui/MiddleEllipsis";
@@ -14,6 +14,9 @@ import CreateClientModal from "@ui/Modal/CreateClientModal";
 import { twMerge } from "tailwind-merge";
 import QRCodeModal from "@ui/Modal/QRCodeModal";
 import { getPeerConf } from "@lib/wireguard-utils";
+import EditableText from "@ui/EditableText";
+import { RLS_NAME_INPUT } from "@lib/form-rules";
+import { UPDATE_CLIENT } from "@lib/swr-fetch";
 
 
 export async function getServerSideProps(context: any) {
@@ -214,8 +217,6 @@ export default function ServerPage(props: PageProps) {
   );
 }
 
-type Peer = WgServer['peers'][0]
-
 interface ClientProps extends Peer, Pick<WgServer, 'dns'> {
   serverId: string
   serverPublicKey: string
@@ -237,9 +238,12 @@ function Client(props: ClientProps) {
       dns: props.dns,
     })
        .then((s) => setConf(s))
-
-    console.log('conf', conf)
   }, [ props ])
+
+  const RefreshOptions = {
+    onSuccess: () => props.refreshTrigger(),
+    onError: () => props.refreshTrigger()
+  }
 
   const { isMutating: removingClient, trigger: removeClient } = useSWRMutation(
      `/api/wireguard/${props.serverId}/${props.id}`,
@@ -252,10 +256,13 @@ function Client(props: ClientProps) {
        if (!data.ok) throw new Error('Server responded with error status')
        return true
      },
-     {
-       onSuccess: () => props.refreshTrigger(),
-       onError: () => props.refreshTrigger()
-     }
+     RefreshOptions
+  )
+
+  const { isMutating, trigger } = useSWRMutation(
+     `/api/wireguard/${props.serverId}/${props.id}`,
+     UPDATE_CLIENT,
+     RefreshOptions
   )
 
   return (
@@ -268,7 +275,14 @@ function Client(props: ClientProps) {
          </div>
          <div className={'col-span-12 md:col-span-4'}>
            <div className={'col-span-12 md:col-span-4'}>
-             <span className={'inline-block font-medium'}> {props.name} </span>
+             <EditableText
+                disabled={isMutating}
+                rules={RLS_NAME_INPUT}
+                rootClassName={'font-medium col-span-4'}
+                inputClassName={'w-20'}
+                content={props.name}
+                onChange={(v) => trigger({ name: v })}
+             />
            </div>
            <div className={'col-span-12 md:col-span-4'}>
              <span className={'font-mono text-gray-400 text-xs'}> {props.allowedIps} </span>

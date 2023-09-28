@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { WG_PATH } from "@lib/constants";
 import Shell from "@lib/shell";
-import { WgKey, WgServer } from "@lib/typings";
+import { Peer, WgKey, WgServer } from "@lib/typings";
 import { client, WG_SEVER_PATH } from "@lib/redis";
 import { dynaJoin, isJson } from "@lib/utils";
 import deepmerge from "deepmerge";
@@ -124,15 +124,15 @@ export class WGServer {
     return true
   }
 
-  static async removePeer(id: string, publicKey: string): Promise<boolean> {
-    const server = await findServer(id)
+  static async removePeer(serverId: string, publicKey: string): Promise<boolean> {
+    const server = await findServer(serverId)
     if (!server) {
       console.error('server could not be updated (reason: not exists)')
       return false
     }
     const peers = await wgPeersStr(server.confId)
 
-    const index = await findServerIndex(id)
+    const index = await findServerIndex(serverId)
     if (typeof index !== 'number') {
       console.warn('findServerIndex: index not found')
       return true
@@ -160,6 +160,60 @@ export class WGServer {
     await WGServer.start(server.id)
 
     return true
+  }
+
+  static async updatePeer(serverId: string, publicKey: string, update: Partial<Peer>): Promise<boolean> {
+    const server = await findServer(serverId)
+    if (!server) {
+      console.error('WGServer:UpdatePeer: server could not be updated (Reason: not exists)')
+      return false
+    }
+
+    const index = await findServerIndex(serverId)
+    if (typeof index !== 'number') {
+      console.warn('findServerIndex: index not found')
+      return true
+    }
+
+    const updatedPeers = server.peers.map((p) => {
+      if (p.publicKey !== publicKey) return p
+      return deepmerge(p, update)
+    })
+
+    await client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }))
+    await this.storePeers({ id: server.id, confId: server.confId }, publicKey, updatedPeers)
+
+    await WGServer.stop(serverId)
+    await WGServer.start(serverId)
+
+    return true
+  }
+
+  private static async getPeerIndex(id: string, publicKey: string): Promise<number | undefined> {
+    const server = await findServer(id)
+    if (!server) {
+      console.error('server could not be updated (reason: not exists)')
+      return undefined
+    }
+    return server.peers.findIndex((p) => p.publicKey === publicKey)
+  }
+
+  private static async storePeers(sd: Pick<WgServer, 'id' | 'confId'>, publicKey: string, peers: Peer[]): Promise<void> {
+
+    const peerIndex = await this.getPeerIndex(sd.id, publicKey)
+    if (peerIndex === -1) {
+      console.warn('WGServer:StorePeers: no peer found')
+      return
+    }
+
+    const confPath = path.join(WG_PATH, `wg${sd.confId}.conf`)
+    const conf = await fs.readFile(confPath, 'utf-8')
+    const serverConfStr = conf.includes('[Peer]') ?
+       conf.split('[Peer]')[0] :
+       conf
+
+    const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n')
+    await fs.writeFile(confPath, `${serverConfStr}\n${peersStr}`)
   }
 
   static async getFreePeerIp(id: string): Promise<string | undefined> {
@@ -388,7 +442,7 @@ export async function generateWgServer(config: {
     throw new Error(`Address ${config.address} is already reserved!`)
   }
 
-  if (Array.isArray(addresses) && ports.includes(config.port)) {
+  if (Array.isArray(ports) && ports.includes(config.port)) {
     throw new Error(`Port ${config.port} is already reserved!`)
   }
 
