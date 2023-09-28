@@ -39,7 +39,7 @@ export default function EditableText(props: EditableTextProps) {
   }, [ val ])
   const [ form ] = Form.useForm()
   return (
-     <div className={twMerge('group', rootClassName)}>
+     <div className={twMerge('group block', rootClassName)}>
        <span {...rest} className={twMerge(
           editMode ? 'hidden' : 'flex items-center gap-x-2',
           'leading-none'

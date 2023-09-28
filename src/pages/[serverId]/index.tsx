@@ -17,6 +17,7 @@ import { getPeerConf } from "@lib/wireguard-utils";
 import EditableText from "@ui/EditableText";
 import { RLS_NAME_INPUT } from "@lib/form-rules";
 import { UPDATE_CLIENT } from "@lib/swr-fetch";
+import CopiableWrapper from "@ui/CopiableWrapper";
 
 
 export async function getServerSideProps(context: any) {
@@ -42,15 +43,13 @@ export default function ServerPage(props: PageProps) {
      async (url: string) => {
        const resp = await fetch(url, {
          method: 'GET',
-         headers: {
-           'Content-Type': 'application/json'
-         }
+         headers: { 'Content-Type': 'application/json' }
        })
        if (resp.status === 404) {
          router.replace('/').catch()
          return false
        }
-       const data = await resp.json() as APIResponse<any>
+       const data = await resp.json() as APIResponse<WgServer>
        if (!data.ok) throw new Error('Server responded with error status')
        return data.result
      }
@@ -58,17 +57,11 @@ export default function ServerPage(props: PageProps) {
 
   const { isMutating: isChangingStatus, trigger: changeStatus } = useSWRMutation(
      `/api/wireguard/${props.serverId}`,
-     async (url: string, { arg }: {
-       arg: string
-     }) => {
+     async (url: string, { arg }: { arg: string }) => {
        const resp = await fetch(url, {
          method: arg === 'remove' ? 'DELETE' : 'PUT',
-         headers: {
-           'Content-Type': 'application/json'
-         },
-         body: arg === 'remove' ? undefined : JSON.stringify({
-           status: arg
-         })
+         headers: { 'Content-Type': 'application/json' },
+         body: arg === 'remove' ? undefined : JSON.stringify({ status: arg })
        })
        if (resp.status === 404) {
          router.replace('/').catch()
@@ -98,7 +91,7 @@ export default function ServerPage(props: PageProps) {
             { title: data ? data.name.toString() : 'LOADING...' }
           ]}
        />
-       {error ? (
+       {error || (!isLoading && !data) ? (
           <Card className={'flex items-center justify-center p-4'}>
             ! ERROR !
           </Card>
@@ -106,21 +99,26 @@ export default function ServerPage(props: PageProps) {
           <Card className={'flex items-center justify-center p-4'}>
             Loading...
           </Card>
-       ) : (
+       ) : data && (
           <div className={'space-y-4'}>
             <Card className={'[&>.ant-card-body]:max-md:p1-2'}>
               <List>
                 <Row label={'IP address'}>
                   <pre> {data.address}/24 </pre>
                 </Row>
+                <Row label={'Listen Port'}>
+                  <pre> {data.listen} </pre>
+                </Row>
                 <Row label={'Status'}>
                   <StatusBadge status={data.status} />
                 </Row>
                 <Row label={'Public Key'}>
-                  <MiddleEllipsis
-                     content={data.publicKey}
-                     maxLength={16}
-                  />
+                  <CopiableWrapper content={data.publicKey}>
+                    <MiddleEllipsis
+                       content={data.publicKey}
+                       maxLength={16}
+                    />
+                  </CopiableWrapper>
                 </Row>
               </List>
               <div className={'flex flex-wrap items-center gap-2 mt-6'}>
@@ -269,25 +267,26 @@ function Client(props: ClientProps) {
      <List.Item key={props.id} className={'flex items-center justify-between p-4'}>
        <QRCodeModal ref={qrcodeRef} content={conf?.trim() || 'null'} />
        <div className={'w-full flex flex-row items-center gap-x-2'}>
-         <div className={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200'}>
-           {/* User Icon */}
+
+         <div
+            className={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}>
            <i className={'fas fa-user text-gray-400 text-lg'} />
          </div>
-         <div className={'col-span-12 md:col-span-4'}>
-           <div className={'col-span-12 md:col-span-4'}>
-             <EditableText
-                disabled={isMutating}
-                rules={RLS_NAME_INPUT}
-                rootClassName={'font-medium col-span-4'}
-                inputClassName={'w-20'}
-                content={props.name}
-                onChange={(v) => trigger({ name: v })}
-             />
-           </div>
-           <div className={'col-span-12 md:col-span-4'}>
+
+         <div className={'flex flex-col items-start justify-between'}>
+           <EditableText
+              disabled={isMutating}
+              rules={RLS_NAME_INPUT}
+              rootClassName={'font-medium col-span-4'}
+              inputClassName={'w-20'}
+              content={props.name}
+              onChange={(v) => trigger({ name: v })}
+           />
+           <CopiableWrapper content={props.allowedIps} className={'text-sm'} showInHover={true}>
              <span className={'font-mono text-gray-400 text-xs'}> {props.allowedIps} </span>
-           </div>
+           </CopiableWrapper>
          </div>
+
        </div>
        <div className={'flex items-center justify-center gap-x-3'}>
          {/* QRCode */}

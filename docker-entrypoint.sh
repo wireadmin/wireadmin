@@ -35,16 +35,16 @@ EOF
   cat /etc/tor/bridges >>/etc/tor/torrc
 fi
 
-# Removing duplicated lines form /etc/tor/torrc file
-awk '!seen[$0]++' /etc/tor/torrc >/tmp/torrc
-mv /tmp/torrc /etc/tor/torrc
-
 # any other environment variables that start with TOR_ are added to the torrc
 # file
 env | grep ^TOR_ | sed -e 's/TOR_//' -e 's/=/ /' >>/etc/tor/torrc
 
+# Removing duplicated lines form /etc/tor/torrc file
+awk '!seen[$0]++' /etc/tor/torrc >/tmp/torrc
+mv /tmp/torrc /etc/tor/torrc
+
 # Start Tor in the background
-screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor"
+screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor -f /etc/tor/torrc"
 
 # Starting Redis server in detached mode
 screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
