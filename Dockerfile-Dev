@@ -14,6 +14,7 @@ RUN apk add -U --no-cache \
   iproute2 iptables net-tools \
   screen vim curl bash \
   wireguard-tools \
+  openssl \
   dumb-init \
   tor \
   redis

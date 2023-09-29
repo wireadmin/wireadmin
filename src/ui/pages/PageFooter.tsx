@@ -6,16 +6,21 @@ export type PageFooterProps = {}
 export default function PageFooter(props: PageFooterProps) {
   return (
      <footer className={'flex items-center justify-center'}>
-       <span className={'text-center m-10 text-gray-300 text-xs'}>
-         Made by
        <Link
           href={'https://github.com/shahradelahi'}
           title={'Find me on Github'}
-          className={'px-1 font-medium'}
+          className={'px-2 font-medium text-gray-400/80 hover:text-gray-500 text-xs'}
        >
-         Shahrad Elahi
+         Made by <span className={'font-medium'}> Shahrad Elahi </span>
        </Link>
-       </span>
+       <DotDivider className={'font-bold text-gray-400'} />
+       <Link
+          href={'https://github.com/shahradelahi/wireadmin'}
+          title={'Github'}
+          className={'px-2 font-medium text-gray-400/80 hover:text-gray-500 text-xs'}
+       >
+         Github
+       </Link>
      </footer>
   )
 }

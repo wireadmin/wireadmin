@@ -9,9 +9,7 @@ function publicENV(ex = {}) {
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [],
-  env: publicENV({
-    NEXT_PUBLIC_WG_HOST: process.env?.WG_HOST
-  })
+  env: publicENV({ NEXTAUTH_URL: 'http://localhost:3000' })
 }
 
 module.exports = nextConfig;

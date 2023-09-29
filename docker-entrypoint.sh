@@ -17,6 +17,37 @@ fi
 
 mkdir -p /var/vlogs
 
+function remove_duplicated_lines() {
+  local file="$1"
+  local temp_file="/tmp/$(basename "$file")"
+  awk '!seen[$0]++' "$file" >"$temp_file"
+  mv "$temp_file" "$file"
+}
+
+function remove_duplicate_env() {
+  local file="$1"
+  local temp_file="/tmp/$(basename "$file")"
+  awk -F "=" -e '!seen[$1]++' "$file" >"$temp_file"
+  mv "$temp_file" "$file"
+}
+
+touch /app/.env.local
+chmod 400 /app/.env.local
+
+echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >>/app/.env.local
+
+# Checking if there is `UI_PASSWORD` environment variable
+# if there was, converting it to hex and storing it to
+# the .env.local
+if [ -n "$UI_PASSWORD" ]; then
+  ui_password_hex=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
+  sed -e '/^HASHED_PASSWORD=/d' /app/.env.local
+  echo "HASHED_PASSWORD=$ui_password_hex" >>/app/.env.local
+  unset UI_PASSWORD
+fi
+
+remove_duplicate_env "/app/.env.local"
+
 # IP address of the container
 inet_address="$(hostname -i | awk '{print $1}')"
 
@@ -40,10 +71,9 @@ fi
 env | grep ^TOR_ | sed -e 's/TOR_//' -e 's/=/ /' >>/etc/tor/torrc
 
 # Removing duplicated lines form /etc/tor/torrc file
-awk '!seen[$0]++' /etc/tor/torrc >/tmp/torrc
-mv /tmp/torrc /etc/tor/torrc
+remove_duplicated_lines "/etc/tor/torrc"
 
-# Start Tor in the background
+# Start Tor on the background
 screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor -f /etc/tor/torrc"
 
 # Starting Redis server in detached mode
@@ -52,6 +82,7 @@ screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479
 # After 5 seconds, export the database to the WireGuard config file
 screen -dm bash -c "sleep 5; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/regen"
 
+sleep 1
 echo -e "\n======================== Versions ========================"
 echo -e "Alpine Version: \c" && cat /etc/alpine-release
 echo -e "WireGuard Version: \c" && wg -v | head -n 1 | awk '{print $1,$2}'
@@ -60,5 +91,6 @@ echo -e "Obfs4proxy Version: \c" && obfs4proxy -version
 echo -e "\n========================= Torrc ========================="
 cat /etc/tor/torrc
 echo -e "========================================================\n"
+sleep 1
 
 exec "$@"
