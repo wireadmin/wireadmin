@@ -13,7 +13,6 @@ export default withAuth({
 // See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    // Match all request paths except for the `/api/auth/*` paths
-    '/((?!api/auth|login|fonts|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|login|logo.png|fonts|_next/static|_next/image|favicon.ico).*)'
   ],
 }

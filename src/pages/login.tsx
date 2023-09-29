@@ -3,9 +3,11 @@ import PageFooter from "@ui/pages/PageFooter";
 import React from "react";
 import Image from "next/image";
 import { Button, Form, Input } from "antd";
+import { useRouter } from "next/router";
 
 export default function LoginPage() {
 
+  const router = useRouter()
   const [ form ] = Form.useForm()
 
   async function handleFinish({ password }: { password: string | undefined }) {
@@ -15,9 +17,11 @@ export default function LoginPage() {
 
     await signIn(
        'credentials',
-       { callbackUrl: '/' },
+       { redirect: false },
        { password }
     )
+
+    await router.push('/')
   }
 
   return (

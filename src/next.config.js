@@ -9,7 +9,10 @@ function publicENV(ex = {}) {
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [],
-  env: publicENV({ NEXTAUTH_URL: 'http://localhost:3000' })
+  env: publicENV({ NEXTAUTH_URL: 'http://127.0.0.1:3000' }),
+  images: {
+    domains: [ 'img.shields.io' ]
+  }
 }
 
 module.exports = nextConfig;
