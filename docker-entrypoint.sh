@@ -79,9 +79,6 @@ screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor -f /etc/tor/torrc"
 # Starting Redis server in detached mode
 screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
 
-# After 5 seconds, export the database to the WireGuard config file
-screen -dm bash -c "sleep 5; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/regen"
-
 sleep 1
 echo -e "\n======================== Versions ========================"
 echo -e "Alpine Version: \c" && cat /etc/alpine-release
@@ -92,5 +89,8 @@ echo -e "\n========================= Torrc ========================="
 cat /etc/tor/torrc
 echo -e "========================================================\n"
 sleep 1
+
+# After 10 seconds, export the database to the WireGuard config file
+screen -dm bash -c "sleep 10; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/regen"
 
 exec "$@"

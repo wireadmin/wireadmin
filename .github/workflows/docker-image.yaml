@@ -35,6 +35,7 @@ jobs:
         run: |
           echo "IMAGE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           echo "IMAGE_TAG=${IMAGE_TAG//./-}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=,ghcr.io/${IMAGE_NAME}:latest" >> $GITHUB_ENV
 
       - name: Push to GitHub Container Registry
         uses: docker/build-push-action@v4
@@ -42,4 +43,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          tags: ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}${{ env.RELEASE_TAG }}
