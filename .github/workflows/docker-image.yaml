@@ -5,7 +5,7 @@ on:
     branches:
       - "master"
     tags:
-      - "*.*.*"
+      - "v*.*.*"
 
 env:
   IMAGE_NAME: shahradelahi/wireadmin
