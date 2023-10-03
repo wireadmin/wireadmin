@@ -1,5 +1,5 @@
 import React from "react";
-import SmartModal, { SmartModalRef } from "@ui/Modal/SmartModal";
+import SmartModal, { SmartModalRef } from "@ui/modal/SmartModal";
 import { Button, Form, Input, notification } from "antd";
 import { z } from "zod";
 import { APIResponse } from "@lib/typings";
@@ -50,11 +50,7 @@ const CreateClientModal = React.forwardRef<
          props.refreshTrigger()
          notificationApi.success({
            message: 'Success',
-           description: (
-              <div>
-                hi
-              </div>
-           )
+           description: 'Client has been created!'
          })
          innerRef.current?.close()
          form?.resetFields()

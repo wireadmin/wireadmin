@@ -24,7 +24,7 @@ export default function PageHeader(props: PageHeaderProps) {
               title={'Giv me a star on Github'}
            >
              <img
-                src={'https://img.shields.io/github/stars/shahradelahi/tsetmc-client.svg?style=social&label=Star'}
+                src={'https://img.shields.io/github/stars/shahradelahi/wireadmin.svg?style=social&label=Star'}
                 alt={'Giv me a star on Github'}
              />
            </Link>

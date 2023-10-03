@@ -1,5 +1,5 @@
 import React from "react";
-import SmartModal, { SmartModalRef } from "@ui/Modal/SmartModal";
+import SmartModal, { SmartModalRef } from "@ui/modal/SmartModal";
 import { QRCodeCanvas } from "qrcode.react";
 import { SHA1 } from "crypto-js";
 

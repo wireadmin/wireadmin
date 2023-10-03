@@ -3,19 +3,18 @@ import { Button, Card, List } from "antd";
 import BasePage from "@ui/pages/BasePage";
 import { APIResponse, WgServer } from "@lib/typings";
 import { PlusOutlined } from "@ant-design/icons";
-import Image, { ImageProps } from "next/image";
 import Link from "next/link";
 import PageRouter from "@ui/pages/PageRouter";
 import useSWR from "swr";
-import { SmartModalRef } from "@ui/Modal/SmartModal";
-import { twMerge } from "tailwind-merge";
-import CreateServerModal from "@ui/Modal/CreateServerModal";
+import { SmartModalRef } from "@ui/modal/SmartModal";
+import CreateServerModal from "@ui/modal/CreateServerModal";
 import StatusBadge from "@ui/StatusBadge";
 import EditableText from "@ui/EditableText";
 import useSWRMutation from "swr/mutation";
 import { UPDATE_SERVER } from "@lib/swr-fetch";
 import { RLS_NAME_INPUT } from "@lib/form-rules";
 import CopiableWrapper from "@ui/CopiableWrapper";
+import ServerIcon from "@ui/icons/ServerIcon";
 
 export default function Home() {
   const { data, error, isLoading, mutate } = useSWR(
@@ -133,47 +132,3 @@ function ServerListItem(props: ServerListItemProps) {
   )
 }
 
-type ServerIconProps = {
-  type: WgServer['type']
-  className?: string
-}
-
-function ServerIcon(props: ServerIconProps) {
-  return (
-     <div className={twMerge('flex items-start', props.className)}>
-       <div className={'w-fit h-full relative'}>
-         <Image
-            src={'/vps.29373866.svg'}
-            alt={'VPS'}
-            width={40}
-            height={40}
-         />
-         {props.type !== 'direct' && (
-            <div className={'absolute -bottom-1 -right-2 rounded-full bg-white'}>
-              {props.type === 'tor' && (
-                 <Image
-                    src={'/tor-onion.svg'}
-                    alt={'Tor'}
-                    width={20}
-                    height={20}
-                 />
-              )}
-            </div>
-         )}
-       </div>
-     </div>
-  )
-}
-
-export function TorOnion(props: Omit<ImageProps, 'src' | 'alt'>) {
-  return (
-     <Image
-        width={20}
-        height={20}
-        {...props}
-        alt={'Tor'}
-        className={twMerge('inline-block', props.className)}
-        src={'/tor-onion.svg'}
-     />
-  )
-}

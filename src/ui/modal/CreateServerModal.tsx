@@ -1,13 +1,13 @@
 import React from "react";
-import SmartModal, { SmartModalRef } from "@ui/Modal/SmartModal";
+import SmartModal, { SmartModalRef } from "@ui/modal/SmartModal";
 import { Button, Form, Input, notification, Segmented } from "antd";
-import { TorOnion } from "@/pages";
 import { z } from "zod";
 import { APIResponse } from "@lib/typings";
 import useSWRMutation from "swr/mutation";
 import { isPrivateIP } from "@lib/utils";
 import { AddressSchema, DnsSchema, MtuSchema, NameSchema, PortSchema, TypeSchema } from "@lib/schemas/WireGuard";
 import { zodErrorMessage } from "@lib/zod";
+import TorOnion from "@ui/icons/TorOnionIcon";
 
 type CreateServerModalProps = {
   refreshTrigger: () => void
@@ -51,11 +51,7 @@ const CreateServerModal = React.forwardRef<
        onSuccess: () => {
          notificationApi.success({
            message: 'Success',
-           description: (
-              <div>
-                hi
-              </div>
-           )
+           description: 'Server has been created!'
          })
          innerRef.current?.close()
          form?.resetFields()
