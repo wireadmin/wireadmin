@@ -31,10 +31,10 @@ jobs:
       # and otherwise image tag is the commit SHA
       - name: Set image tag
         run: |
-          echo "RELEASE_TAG=,ghcr.io/${IMAGE_NAME}:latest" >> $GITHUB_ENV
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
             echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+            echo "RELEASE_TAG=,ghcr.io/${IMAGE_NAME}:latest" >> $GITHUB_ENV
           else
             echo "Labeling image with commit SHA: ${GITHUB_SHA}"
             echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
