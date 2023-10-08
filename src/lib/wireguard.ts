@@ -8,6 +8,7 @@ import { dynaJoin, isJson } from "@lib/utils";
 import deepmerge from "deepmerge";
 import { getPeerConf } from "@lib/wireguard-utils";
 import Network from "@lib/network";
+import { SHA256 } from "crypto-js";
 
 export class WGServer {
 
@@ -108,6 +109,7 @@ export class WGServer {
       peer.persistentKeepalive && `PersistentKeepalive = ${peer.persistentKeepalive}`
     ]))
     await fs.writeFile(confPath, lines.join('\n'))
+    await WGServer.update(id, { confHash: await getConfigHash(id) });
 
     const index = await findServerIndex(id)
     if (typeof index !== 'number') {
@@ -155,6 +157,7 @@ export class WGServer {
        conf
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n')
     await fs.writeFile(confPath, `${serverConfStr}\n${peersStr}`)
+    await WGServer.update(server.id, { confHash: await getConfigHash(server.id) });
 
     await WGServer.stop(server.id)
     await WGServer.start(server.id)
@@ -214,6 +217,7 @@ export class WGServer {
 
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n')
     await fs.writeFile(confPath, `${serverConfStr}\n${peersStr}`)
+    await WGServer.update(sd.id, { confHash: await getConfigHash(sd.id) });
   }
 
   static async getFreePeerIp(id: string): Promise<string | undefined> {
@@ -271,6 +275,7 @@ export async function readWgConf(configId: number): Promise<WgServer> {
   const server: WgServer = {
     id: crypto.randomUUID(),
     confId: configId,
+    confHash: null,
     type: 'direct',
     name: '',
     address: '',
@@ -416,6 +421,7 @@ export async function generateWgServer(config: {
   let server: WgServer = {
     id: uuid,
     confId,
+    confHash: null,
     type: config.type,
     name: config.name,
     address: config.address,
@@ -459,9 +465,10 @@ export async function generateWgServer(config: {
   const CONFIG_PATH = path.join(WG_PATH, `wg${confId}.conf`)
 
   // save server config to disk
-  await fs.writeFile(CONFIG_PATH, await genServerConf(server), {
-    mode: 0o600,
-  })
+  await fs.writeFile(CONFIG_PATH, await genServerConf(server), { mode: 0o600 })
+
+  // updating hash of the config
+  await WGServer.update(uuid, { confHash: await getConfigHash(uuid) });
 
   // to ensure interface does not exists
   await Shell.exec(`wg-quick down wg${confId}`, true)
@@ -471,6 +478,23 @@ export async function generateWgServer(config: {
 
   // return server id
   return uuid
+}
+
+export async function getConfigHash(id: string): Promise<string | undefined> {
+  const server = await findServer(id)
+  if (!server) {
+    console.error('getConfigHash: server not found')
+    return undefined
+  }
+  const confPath = path.join(WG_PATH, `wg${server.confId}.conf`)
+  const conf = await fs.readFile(confPath, 'utf-8')
+  return CryptoJS.enc.Hex.stringify(SHA256(conf));
+}
+
+export async function writeConfigFile(wg: WgServer): Promise<void> {
+  const CONFIG_PATH = path.join(WG_PATH, `wg${wg.confId}.conf`)
+  await fs.writeFile(CONFIG_PATH, await genServerConf(wg), { mode: 0o600 })
+  await WGServer.update(wg.id, { confHash: await getConfigHash(wg.id) });
 }
 
 export async function maxConfId(): Promise<number> {

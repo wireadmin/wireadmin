@@ -44,6 +44,7 @@ export type Peer = z.infer<typeof PeerSchema>
 export const WgServerSchema = z.object({
   id: z.string().uuid(),
   confId: z.number(),
+  confHash: z.string().nullable(),
   type: z.enum([ 'direct', 'bridge', 'tor' ]),
   name: NameSchema,
   address: z.string().regex(IPV4_REGEX),
