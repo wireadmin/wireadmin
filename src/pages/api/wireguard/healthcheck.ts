@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     for (const s of servers) {
 
-      const HASH = await getConfigHash(s.id);
+      const HASH = await getConfigHash(s.confId);
       if (s.confId && s.confHash === HASH) {
         // Skip, due to no changes on the config
         continue;

@@ -109,7 +109,7 @@ export class WGServer {
       peer.persistentKeepalive && `PersistentKeepalive = ${peer.persistentKeepalive}`
     ]))
     await fs.writeFile(confPath, lines.join('\n'))
-    await WGServer.update(id, { confHash: await getConfigHash(id) });
+    await WGServer.update(id, { confHash: await getConfigHash(server.confId) });
 
     const index = await findServerIndex(id)
     if (typeof index !== 'number') {
@@ -157,7 +157,7 @@ export class WGServer {
        conf
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n')
     await fs.writeFile(confPath, `${serverConfStr}\n${peersStr}`)
-    await WGServer.update(server.id, { confHash: await getConfigHash(server.id) });
+    await WGServer.update(server.id, { confHash: await getConfigHash(server.confId) });
 
     await WGServer.stop(server.id)
     await WGServer.start(server.id)
@@ -217,7 +217,7 @@ export class WGServer {
 
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n')
     await fs.writeFile(confPath, `${serverConfStr}\n${peersStr}`)
-    await WGServer.update(sd.id, { confHash: await getConfigHash(sd.id) });
+    await WGServer.update(sd.id, { confHash: await getConfigHash(sd.confId) });
   }
 
   static async getFreePeerIp(id: string): Promise<string | undefined> {
@@ -468,7 +468,7 @@ export async function generateWgServer(config: {
   await fs.writeFile(CONFIG_PATH, await genServerConf(server), { mode: 0o600 })
 
   // updating hash of the config
-  await WGServer.update(uuid, { confHash: await getConfigHash(uuid) });
+  await WGServer.update(uuid, { confHash: await getConfigHash(confId) });
 
   // to ensure interface does not exists
   await Shell.exec(`wg-quick down wg${confId}`, true)
@@ -480,13 +480,11 @@ export async function generateWgServer(config: {
   return uuid
 }
 
-export async function getConfigHash(id: string): Promise<string | undefined> {
-  const server = await findServer(id)
-  if (!server) {
-    console.error('getConfigHash: server not found')
+export async function getConfigHash(confId: number): Promise<string | undefined> {
+  if (!await wgConfExists(confId)) {
     return undefined
   }
-  const confPath = path.join(WG_PATH, `wg${server.confId}.conf`)
+  const confPath = path.join(WG_PATH, `wg${confId}.conf`)
   const conf = await fs.readFile(confPath, 'utf-8')
   return CryptoJS.enc.Hex.stringify(SHA256(conf));
 }
@@ -494,7 +492,7 @@ export async function getConfigHash(id: string): Promise<string | undefined> {
 export async function writeConfigFile(wg: WgServer): Promise<void> {
   const CONFIG_PATH = path.join(WG_PATH, `wg${wg.confId}.conf`)
   await fs.writeFile(CONFIG_PATH, await genServerConf(wg), { mode: 0o600 })
-  await WGServer.update(wg.id, { confHash: await getConfigHash(wg.id) });
+  await WGServer.update(wg.id, { confHash: await getConfigHash(wg.confId) });
 }
 
 export async function maxConfId(): Promise<number> {
