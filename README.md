@@ -60,12 +60,12 @@ Please feel free to open an issue if you have any questions or suggestions.
 
 These options can be configured by setting environment variables using `-e KEY="VALUE"` in the `docker run` command.
 
-| Option            | Description                                                                           | Default | Optional |
-|-------------------|---------------------------------------------------------------------------------------|---------|----------|
-| `WG_HOST`         | The public IP address of the WireGuard server.                                        | `""`    |          |
-| `UI_PASSWORD`     | The password for the admin UI.                                                        | `""`    | ✔️       |
-| `TOR_USE_BRIDGES` | Quick setup of Tor bridges. You have to mount the bridges file at `/etc/tor/bridges`. | `""`    | ✔️       |
-| `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)         | `""`    | ✔️       |
+| Option            | Description                                                                                                          | Default | Optional |
+|-------------------|----------------------------------------------------------------------------------------------------------------------|---------|----------|
+| `WG_HOST`         | The public IP address of the WireGuard server.                                                                       | `""`    |          |
+| `UI_PASSWORD`     | The password for the admin UI.                                                                                       | `""`    | ✔️       |
+| `TOR_USE_BRIDGES` | Set this to `true` for quick setup of `obfs4` Tor bridges. You have to mount the bridges file at `/etc/tor/bridges`. | `""`    | ✔️       |
+| `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)                                        | `""`    | ✔️       |
 
 ## Support the Project
 
@@ -74,4 +74,4 @@ repository.
 
 ## License
 
-This project is licensed under the MIT License—see the [LICENSE](LICENSE) file for details.
+This project is licensed under the `GPL-3.0` license. See the [LICENSE](LICENSE) file for more info.
