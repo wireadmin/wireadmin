@@ -13,14 +13,11 @@ export default class Shell {
          { shell: 'bash' },
          (err, stdout, stderr) => {
            if (err) {
-             console.error('Shell Command Failed:');
-             console.error({
-               command: cmd,
-               code: err.code,
-               killed: err.killed,
-               stderr
-             })
-             return safe ? resolve('') : reject(err);
+             console.error(
+                `${safe ? 'Ignored::' : 'CRITICAL::'} Shell Command Failed:`,
+                JSON.stringify({ cmd, code: err.code, killed: err.killed, stderr })
+             );
+             return safe ? resolve(stderr) : reject(err);
            }
            return resolve(String(stdout).trim());
          }

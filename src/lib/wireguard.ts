@@ -8,7 +8,7 @@ import { dynaJoin, isJson } from "@lib/utils";
 import deepmerge from "deepmerge";
 import { getPeerConf } from "@lib/wireguard-utils";
 import Network from "@lib/network";
-import { SHA256 } from "crypto-js";
+import { enc, SHA256 } from "crypto-js";
 
 export class WGServer {
 
@@ -19,7 +19,9 @@ export class WGServer {
       return false
     }
 
-    await Shell.exec(`wg-quick down wg${server.confId}`, true)
+    if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
+      await Shell.exec(`wg-quick down wg${server.confId}`, true)
+    }
 
     await this.update(id, { status: 'down' })
     return true
@@ -32,7 +34,16 @@ export class WGServer {
       return false
     }
 
-    await Shell.exec(`wg-quick down wg${server.confId}`, true)
+    const HASH = await getConfigHash(server.confId);
+    if (!HASH || server.confHash !== HASH) {
+      await writeConfigFile(server);
+      await WGServer.update(id, { confHash: await getConfigHash(server.confId) });
+    }
+
+    if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
+      await Shell.exec(`wg-quick down wg${server.confId}`, true)
+    }
+
     await Shell.exec(`wg-quick up wg${server.confId}`)
 
     await this.update(id, { status: 'up' })
@@ -484,9 +495,10 @@ export async function getConfigHash(confId: number): Promise<string | undefined>
   if (!await wgConfExists(confId)) {
     return undefined
   }
+
   const confPath = path.join(WG_PATH, `wg${confId}.conf`)
   const conf = await fs.readFile(confPath, 'utf-8')
-  return CryptoJS.enc.Hex.stringify(SHA256(conf));
+  return enc.Hex.stringify(SHA256(conf));
 }
 
 export async function writeConfigFile(wg: WgServer): Promise<void> {

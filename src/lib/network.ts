@@ -30,4 +30,9 @@ export default class Network {
     return await Shell.exec(`ip route list default | awk '{print $5}'`)
   }
 
+  public static async checkInterfaceExists(inet: string): Promise<boolean> {
+    return await Shell.exec(`ip link show | grep ${inet}`, true)
+       .then((o) => o.trim() !== '')
+  }
+
 };
