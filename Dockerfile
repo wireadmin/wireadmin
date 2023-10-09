@@ -4,9 +4,6 @@ WORKDIR /app
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY --from=golang:1.20-alpine /usr/local/go/ /usr/local/go/
-COPY --from=gogost/gost:3.0.0-rc8 /bin/gost /usr/local/bin/gost
-
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
