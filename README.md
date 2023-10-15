@@ -34,6 +34,7 @@ Install WireAdmin using the command line:
 ```bash
 docker run -d \
  --name wireadmin \
+ --restart unless-stopped \
  -e WG_HOST="🚨YOUR_SERVER_IP" \
  -e UI_PASSWORD="🔐OPTIONAL_ADMIN_PASSWORD" \
  -p "3000:3000/tcp" \
@@ -42,9 +43,8 @@ docker run -d \
  --cap-add=NET_ADMIN \
  --cap-add=SYS_MODULE \
  --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
- --sysctl="net.ipv4.ip_forward=1" \ 
- --restart unless-stopped \
- ghcr.io/shahradelahi/wireadmin
+ --sysctl="net.ipv4.ip_forward=1" \
+  ghcr.io/shahradelahi/wireadmin
 ```
 
 Please note that the port `3000` is for the UI and it is up to you to remove it after configuring the Servers/Peers.
