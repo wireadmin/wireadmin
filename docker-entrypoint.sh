@@ -91,6 +91,6 @@ echo -e "========================================================\n"
 sleep 1
 
 # After 10 seconds, export the database to the WireGuard config file
-screen -dm bash -c "sleep 10; curl -s -o /dev/null http://127.0.0.1:3000/api/wireguard/healthcheck"
+screen -dm bash -c "sleep 10; curl -s -o /dev/null http://127.0.0.1:3000/api/healthcheck"
 
 exec "$@"
