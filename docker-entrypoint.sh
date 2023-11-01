@@ -34,7 +34,12 @@ function remove_duplicate_env() {
 touch /app/.env.local
 chmod 400 /app/.env.local
 
-echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >>/app/.env.local
+
+if ! grep -q "NEXTAUTH_SECRET" /app/.env.local; then
+  cat <<EOF >>/app/.env.local
+NEXTAUTH_SECRET=$(openssl rand -base64 32)
+EOF
+fi
 
 # Checking if there is `UI_PASSWORD` environment variable
 # if there was, converting it to hex and storing it to
@@ -42,7 +47,9 @@ echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >>/app/.env.local
 if [ -n "$UI_PASSWORD" ]; then
   ui_password_hex=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
   sed -e '/^HASHED_PASSWORD=/d' /app/.env.local
-  echo "HASHED_PASSWORD=$ui_password_hex" >>/app/.env.local
+  cat <<EOF >>/app/.env.local
+HASHED_PASSWORD=$ui_password_hex
+EOF
   unset UI_PASSWORD
 fi
 
@@ -78,6 +85,13 @@ screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor -f /etc/tor/torrc"
 
 # Starting Redis server in detached mode
 screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
+
+echo " _       ___           ___       __          _     "
+echo "| |     / (_)_______  /   | ____/ /___ ___  (_)___ "
+echo "| | /| / / / ___/ _ \/ /| |/ __  / __ \`__ \/ / __ \\"
+echo "| |/ |/ / / /  /  __/ ___ / /_/ / / / / / / / / / /"
+echo "|__/|__/_/_/   \___/_/  |_\__,_/_/ /_/ /_/_/_/ /_/ "
+echo "                                                   "
 
 sleep 1
 echo -e "\n======================== Versions ========================"
