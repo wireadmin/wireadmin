@@ -1,5 +1,6 @@
-FROM node:alpine as base
-WORKDIR /app
+FROM oven/bun:alpine as base
+LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
+WORKDIR /usr/src/app
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -7,51 +8,58 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
+# Set the mirror list
+RUN echo "https://uk.alpinelinux.org/alpine/latest-stable/main" > /etc/apk/repositories && \
+    echo "https://mirror.bardia.tech/alpine/latest-stable/main" >> /etc/apk/repositories && \
+    echo "https://uk.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
+    echo "https://mirror.bardia.tech/alpine/latest-stable/community" >> /etc/apk/repositories
+
+# Update and upgrade packages
+RUN apk update && apk upgrade
+
+# Install required packages
 RUN apk add -U --no-cache \
-  iproute2 iptables net-tools \
-  screen vim curl bash \
-  wireguard-tools \
-  openssl \
-  dumb-init \
-  tor \
-  redis
+    iproute2 iptables net-tools \
+    screen vim curl bash \
+    wireguard-tools \
+    openssl \
+    dumb-init \
+    tor \
+    redis
+
+# Clear cache
+RUN rm -rf /var/cache/apk/*
 
 
-FROM node:alpine  as builder
-WORKDIR /app
+FROM base AS deps
 
-COPY /src/package.json /src/package-lock.json ./
-RUN npm install
+RUN mkdir -p /temp/dev
+COPY web/package.json web/bun.lockb /temp/dev/
+RUN cd /temp/dev && bun install --frozen-lockfile
+
+RUN mkdir -p /temp/prod
+COPY web/package.json web/bun.lockb /temp/prod/
+RUN cd /temp/prod && bun install --frozen-lockfile --production
+
+
+FROM base AS build
+COPY --from=deps /temp/dev/node_modules node_modules
+COPY web .
+
+# build
+ENV NODE_ENV=production
+RUN bun run build
+
+
+FROM base AS release
+
+COPY --from=deps /temp/prod/node_modules node_modules
+COPY --from=build /usr/src/app/build .
+COPY --from=build /usr/src/app/package.json .
 
 ENV NODE_ENV=production
-COPY /src/ .
 
-RUN npm run build
-
-
-FROM base
-WORKDIR /app
-
-ENV NODE_ENV=production
-
-LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
-
-COPY /config/torrc /etc/tor/torrc
-
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/next.config.js ./next.config.js
-COPY --from=builder /app/public ./public
-
-COPY /src/package.json /src/package-lock.json ./
-RUN npm install --omit dev
-
+# run the app
+USER bun
 EXPOSE 3000/tcp
-
-HEALTHCHECK --interval=60s --timeout=10s --start-period=5s --retries=3 \
- CMD curl -f http://127.0.0.1:3000/api/healthcheck || exit 1
-
-COPY docker-entrypoint.sh /usr/bin/entrypoint
-RUN chmod +x /usr/bin/entrypoint
-ENTRYPOINT ["/usr/bin/entrypoint"]
-
-CMD ["npm", "run", "start"]
+CMD [ "bun", "start" ]

@@ -3,7 +3,9 @@ services:
   wireadmin:
     image: wireadmin
     volumes:
-      - ./src/:/app/
+      - ./web/:/usr/src/app/
+    ports:
+      - "5173:5173"
     environment:
       - UI_PASSWORD=password
       - WG_HOST=192.168.1.102

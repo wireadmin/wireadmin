@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "dev:image": "DOCKER_BUILDKIT=1 docker build --tag wireadmin -f Dockerfile-Dev .",
-    "dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up; docker rm -f wireadmin"
+    "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up && docker compose rm -fsv"
   },
   "keywords": [],
   "author": "Shahrad Elahi <https://github.com/shahradelahi>",
