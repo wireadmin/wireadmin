@@ -3,14 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev:image": "cross-env DOCKER_BUILDKIT=1 docker build --tag wireadmin -f Dockerfile-Dev .",
+    "dev:image": "DOCKER_BUILDKIT=1 docker build --tag wireadmin -f Dockerfile-Dev .",
     "dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up; docker rm -f wireadmin"
   },
   "keywords": [],
   "author": "Shahrad Elahi <https://github.com/shahradelahi>",
-  "license": "MIT",
-  "packageManager": "pnpm@8.7.0",
-  "dependencies": {
-    "cross-env": "^7.0.3"
-  }
+  "license": "MIT"
 }

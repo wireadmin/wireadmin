@@ -1,11 +1,9 @@
-FROM node:alpine as base
-WORKDIR /app
+FROM oven/bun:alpine as base
+LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
+WORKDIR /usr/src/app
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-COPY --from=golang:1.20-alpine /usr/local/go/ /usr/local/go/
-COPY --from=gogost/gost:3.0.0-rc8 /bin/gost /usr/local/bin/gost
 
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
@@ -20,19 +18,35 @@ RUN apk add -U --no-cache \
   redis
 
 
-FROM base
-WORKDIR /app
+FROM base AS deps
 
-COPY /src/ /app/
-COPY /config/torrc /etc/tor/torrc
+RUN mkdir -p /temp/dev
+COPY web/package.json web/bun.lockb /temp/dev/
+RUN cd /temp/dev && bun install --frozen-lockfile
 
+RUN mkdir -p /temp/prod
+COPY web/package.json web/bun.lockb /temp/prod/
+RUN cd /temp/prod && bun install --frozen-lockfile --production
+
+
+FROM install AS build
+COPY --from=deps /temp/dev/node_modules node_modules
+COPY web .
+
+# build
+ENV NODE_ENV=production
+RUN bun run build
+
+
+FROM base AS release
+
+COPY --from=deps /temp/prod/node_modules node_modules
+COPY --from=build /usr/src/app/build .
+COPY --from=build /usr/src/app/package.json .
+
+ENV NODE_ENV=production
+
+# run the app
+USER bun
 EXPOSE 3000/tcp
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
- CMD curl -f http://127.0.0.1:3000/api/healthcheck || exit 1
-
-COPY docker-entrypoint.sh /usr/bin/entrypoint
-RUN chmod +x /usr/bin/entrypoint
-ENTRYPOINT ["/usr/bin/entrypoint"]
-
-CMD ["npm", "run", "dev"]
+CMD [ "bun", "start" ]
