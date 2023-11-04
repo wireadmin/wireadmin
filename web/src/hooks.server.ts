@@ -3,26 +3,22 @@ import { verifyToken } from '$lib/auth';
 import { HASHED_PASSWORD } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
-
   if (!!HASHED_PASSWORD && !AUTH_EXCEPTION.includes(event.url.pathname)) {
     const token = event.cookies.get('authorization');
+    const token_valid = await verifyToken(token ?? '');
+
     const redirect = new Response(null, { status: 302, headers: { location: '/login' } });
+    const is_login_page = event.url.pathname === '/login';
 
-    if (!token) {
-      console.log('handle', event.url.pathname, 'no token');
-      return redirect;
-    }
-
-    const token_valid = await verifyToken(token);
-    if (!token_valid) {
+    if (!token_valid && !is_login_page) {
       console.log('handle', event.url.pathname, 'invalid token');
       return redirect;
     }
-  }
 
-  if (event.url.pathname === '/login') {
-    console.log('handle', 'already logged in');
-    return new Response(null, { status: 302, headers: { location: '/' } });
+    if (token_valid && is_login_page) {
+      console.log('handle', 'already logged in');
+      return new Response(null, { status: 302, headers: { location: '/' } });
+    }
   }
 
   const resp = await resolve(event);
@@ -32,5 +28,4 @@ export const handle: Handle = async ({ event, resolve }) => {
   return resp;
 };
 
-
-const AUTH_EXCEPTION = ['/api/health', '/login'];
+const AUTH_EXCEPTION = ['/api/health'];

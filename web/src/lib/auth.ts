@@ -16,7 +16,6 @@ export async function generateToken(): Promise<string> {
 export async function verifyToken(token: string): Promise<boolean> {
   try {
     const decode = jwt.verify(token, AUTH_SECRET);
-    console.log('decode', decode);
     return !!decode;
   } catch (e) {
     return false;
