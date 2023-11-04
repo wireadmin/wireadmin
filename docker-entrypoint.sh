@@ -31,13 +31,13 @@ function remove_duplicate_env() {
   mv "$temp_file" "$file"
 }
 
-touch /app/.env.local
-chmod 400 /app/.env.local
+touch /app/.env
+chmod 400 /app/.env
 
 
-if ! grep -q "NEXTAUTH_SECRET" /app/.env.local; then
-  cat <<EOF >>/app/.env.local
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
+if ! grep -q "AUTH_SECRET" /app/.env; then
+  cat <<EOF >>/app/.env
+AUTH_SECRET=$(openssl rand -base64 32)
 EOF
 fi
 
@@ -46,8 +46,8 @@ fi
 # the .env.local
 if [ -n "$UI_PASSWORD" ]; then
   ui_password_hex=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
-  sed -e '/^HASHED_PASSWORD=/d' /app/.env.local
-  cat <<EOF >>/app/.env.local
+  sed -e '/^HASHED_PASSWORD=/d' /app/.env
+  cat <<EOF >>/app/.env
 HASHED_PASSWORD=$ui_password_hex
 EOF
   unset UI_PASSWORD

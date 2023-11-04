@@ -1,16 +1,10 @@
 import type { Handle } from '@sveltejs/kit';
 import { verifyToken } from '$lib/auth';
+import { HASHED_PASSWORD } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
-  if (event.url.pathname.startsWith('/custom')) {
-    const resp = new Response('custom response');
-    resp.headers.set('content-type', 'text/plain');
-    return resp;
-  }
 
-  const auth_exception = ['/api/health', '/login'];
-
-  if (!auth_exception.includes(event.url.pathname)) {
+  if (!!HASHED_PASSWORD && !AUTH_EXCEPTION.includes(event.url.pathname)) {
     const token = event.cookies.get('authorization');
     const redirect = new Response(null, { status: 302, headers: { location: '/login' } });
 
@@ -26,9 +20,17 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   }
 
+  if (event.url.pathname === '/login') {
+    console.log('handle', 'already logged in');
+    return new Response(null, { status: 302, headers: { location: '/' } });
+  }
+
   const resp = await resolve(event);
 
   console.log('handle', event.url.pathname, resp.status);
 
   return resp;
 };
+
+
+const AUTH_EXCEPTION = ['/api/health', '/login'];
