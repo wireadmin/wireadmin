@@ -1,12 +1,14 @@
 FROM oven/bun:alpine as base
 LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
-WORKDIR /usr/src/app
+WORKDIR /app
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
+
+COPY /config/torrc /etc/tor/torrc
 
 # Set the mirror list
 RUN echo "https://uk.alpinelinux.org/alpine/latest-stable/main" > /etc/apk/repositories && \
@@ -54,10 +56,14 @@ RUN bun run build
 FROM base AS release
 
 COPY --from=deps /temp/prod/node_modules node_modules
-COPY --from=build /usr/src/app/build .
-COPY --from=build /usr/src/app/package.json .
+COPY --from=build /app/build .
+COPY --from=build /app/package.json .
 
 ENV NODE_ENV=production
+
+COPY docker-entrypoint.sh /usr/bin/entrypoint
+RUN chmod +x /usr/bin/entrypoint
+ENTRYPOINT ["/usr/bin/entrypoint"]
 
 # run the app
 USER bun

@@ -43,7 +43,7 @@ fi
 
 # Checking if there is `UI_PASSWORD` environment variable
 # if there was, converting it to hex and storing it to
-# the .env.local
+# the .env
 if [ -n "$UI_PASSWORD" ]; then
   ui_password_hex=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
   sed -e '/^HASHED_PASSWORD=/d' /app/.env
@@ -53,7 +53,7 @@ EOF
   unset UI_PASSWORD
 fi
 
-remove_duplicate_env "/app/.env.local"
+remove_duplicate_env "/app/.env"
 
 # IP address of the container
 inet_address="$(hostname -i | awk '{print $1}')"
@@ -86,6 +86,7 @@ screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor -f /etc/tor/torrc"
 # Starting Redis server in detached mode
 screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
 
+echo "                                                   "
 echo " _       ___           ___       __          _     "
 echo "| |     / (_)_______  /   | ____/ /___ ___  (_)___ "
 echo "| | /| / / / ___/ _ \/ /| |/ __  / __ \`__ \/ / __ \\"

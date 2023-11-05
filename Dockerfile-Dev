@@ -1,12 +1,18 @@
-FROM oven/bun:alpine as base
+FROM node:alpine as base
 LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
-WORKDIR /usr/src/app
+WORKDIR /app
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
+
+COPY /config/torrc /etc/tor/torrc
 
 # Set the mirror list
 RUN echo "https://uk.alpinelinux.org/alpine/latest-stable/main" > /etc/apk/repositories && \
@@ -33,16 +39,20 @@ RUN rm -rf /var/cache/apk/*
 
 FROM base AS deps
 
-RUN mkdir -p /temp/dev
-COPY web/package.json web/bun.lockb web/node_modules* /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+RUN mkdir -p /temp/dev/
+
+COPY web/package.json web/pnpm-lock.yaml /temp/dev/
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/dev/
 
 
 FROM base AS runner
 
 COPY --from=deps /temp/dev/node_modules node_modules
-COPY web .
+
+COPY docker-entrypoint.sh /usr/bin/entrypoint
+RUN chmod +x /usr/bin/entrypoint
+ENTRYPOINT ["/usr/bin/entrypoint"]
 
 # run the appc
 EXPOSE 5173/tcp
-CMD [ "bun", "dev", "--host" ]
+CMD [ "npm", "run", "dev", "--", "--host" ]

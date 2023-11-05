@@ -44,7 +44,7 @@ docker run -d \
  --cap-add=SYS_MODULE \
  --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
  --sysctl="net.ipv4.ip_forward=1" \
-  ghcr.io/shahradelahi/wireadmin
+  ghcr.io/shahradelahi/wireadmin:latest
 ```
 
 Please note that the port `3000` is for the UI and it is up to you to remove it after configuring the Servers/Peers.
