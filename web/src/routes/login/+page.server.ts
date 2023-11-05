@@ -1,6 +1,7 @@
-import { type Actions, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
+import type { Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { superValidate } from 'sveltekit-superforms/server';
+import { setError, superValidate } from 'sveltekit-superforms/server';
 import { formSchema } from './schema';
 import { HASHED_PASSWORD } from '$env/static/private';
 import { generateToken } from '$lib/auth';
@@ -12,19 +13,22 @@ export const load: PageServerLoad = () => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, cookies }) => {
-    const data = await request.formData();
-    const password = data.get('password') ?? '';
+  default: async (event) => {
+    const form = await superValidate(event, formSchema);
+
+    if (!form.valid) {
+      return fail(400, { ok: false, message: 'Bad Request', form });
+    }
+
+    const { password } = form.data;
 
     if (HASHED_PASSWORD.toLowerCase() !== Buffer.from(password.toString()).toString('hex').toLowerCase()) {
-      console.warn('auth failed');
-      return fail(401, { message: 'Unauthorized' });
+      return setError(form, 'password', 'Incorrect password.');
     }
 
     const token = await generateToken();
-    cookies.set('authorization', token);
+    event.cookies.set('authorization', token);
 
-    console.info('logged in.');
-    return { message: 'Success!' };
+    return { ok: true };
   },
 };
