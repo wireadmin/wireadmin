@@ -1,7 +1,7 @@
 import { type Actions, error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { findServer, getServers, WGServer } from '$lib/wireguard';
-import { superValidate } from 'sveltekit-superforms/server';
+import { findServer, generateWgServer, getServers, WGServer } from '$lib/wireguard';
+import { setError, superValidate } from 'sveltekit-superforms/server';
 import { CreateServerSchema } from './schema';
 import { NameSchema } from '$lib/wireguard/schema';
 
@@ -32,5 +32,27 @@ export const actions: Actions = {
     await WGServer.update(server.id, { name });
 
     return { ok: true };
+  },
+  create: async (event) => {
+    const form = await superValidate(event, CreateServerSchema);
+    if (!form.valid) {
+      return setError(form, 'Bad Request');
+    }
+
+    const { name, address, port, dns, mtu = '1350' } = form.data;
+
+    const serverId = await generateWgServer({
+      name,
+      address,
+      port: Number(port),
+      type: 'direct',
+      mtu: Number(mtu),
+      dns,
+    });
+
+    return {
+      ok: true,
+      serverId,
+    };
   },
 };
