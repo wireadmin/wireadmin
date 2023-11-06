@@ -11,7 +11,7 @@
       <h1>WireAdmin</h1>
     </div>
 
-    <div class={'flex items-center gap-x-2'}>
+    <div class={'hidden md:flex items-center gap-x-2'}>
       <a href={'https://github.com/shahradelahi/wireadmin'} title={'Giv me a star on Github'}>
         <img
           src={'https://img.shields.io/github/stars/shahradelahi/wireadmin.svg?style=social&label=Star'}
@@ -20,7 +20,7 @@
       </a>
 
       {#if showLogout}
-        <a href={'/logout'} class={''} title="logout">
+        <a href={'/logout'} title="logout">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-6 w-6 text-red-500 hover:text-red-700"
