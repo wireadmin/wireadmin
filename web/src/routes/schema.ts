@@ -9,3 +9,5 @@ export const CreateServerSchema = z.object({
   dns: DnsSchema,
   mtu: MtuSchema,
 });
+
+export type CreateServerSchemaType = typeof CreateServerSchema;
