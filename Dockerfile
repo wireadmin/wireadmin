@@ -1,9 +1,13 @@
-FROM oven/bun:alpine as base
+FROM node:alpine as base
 LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
 WORKDIR /app
 
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
@@ -37,12 +41,12 @@ RUN rm -rf /var/cache/apk/*
 FROM base AS deps
 
 RUN mkdir -p /temp/dev
-COPY web/package.json web/bun.lockb /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+COPY web/package.json web/pnpm-lock.yaml /temp/dev/
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/dev/
 
 RUN mkdir -p /temp/prod
-COPY web/package.json web/bun.lockb /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
+COPY web/package.json web/pnpm-lock.yaml /temp/prod/
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/prod/
 
 
 FROM base AS build
@@ -51,13 +55,13 @@ COPY web .
 
 # build
 ENV NODE_ENV=production
-RUN bun run build
+RUN npm run build
 
 
 FROM base AS release
 
 COPY --from=deps /temp/prod/node_modules node_modules
-COPY --from=build /app/build .
+COPY --from=build /app/build build
 COPY --from=build /app/package.json .
 
 ENV NODE_ENV=production
@@ -72,4 +76,4 @@ HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
 # run the app
 USER bun
 EXPOSE 3000/tcp
-CMD [ "bun", "start" ]
+CMD [ "npm", "run", "start" ]
