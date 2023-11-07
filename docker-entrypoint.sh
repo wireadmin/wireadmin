@@ -81,10 +81,12 @@ env | grep ^TOR_ | sed -e 's/TOR_//' -e 's/=/ /' >>/etc/tor/torrc
 remove_duplicated_lines "/etc/tor/torrc"
 
 # Start Tor on the background
-screen -L -Logfile /var/vlogs/tor -dmS tor bash -c "tor -f /etc/tor/torrc"
+screen -L -Logfile /var/vlogs/tor -dmS tor \
+  bash -c "tor -f /etc/tor/torrc"
 
 # Starting Redis server in detached mode
-screen -L -Logfile /var/vlogs/redis -dmS redis bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
+screen -L -Logfile /var/vlogs/redis -dmS redis \
+  bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
 
 echo "                                                   "
 echo " _       ___           ___       __          _     "
@@ -105,7 +107,7 @@ cat /etc/tor/torrc
 echo -e "========================================================\n"
 sleep 1
 
-# After 10 seconds, export the database to the WireGuard config file
-screen -dm bash -c "sleep 10; curl -s -o /dev/null http://127.0.0.1:3000/api/healthcheck"
+screen -L -Logfile /var/vlogs/warmup -dmS warmup \
+  bash -c "sleep 10; echo -n '[+] Warming Up...'; curl -s http://127.0.0.1:3000/; echo -e 'Done!'"
 
 exec "$@"

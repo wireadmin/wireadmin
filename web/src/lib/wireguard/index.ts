@@ -33,10 +33,10 @@ export class WGServer {
       return false;
     }
 
-    const HASH = await getConfigHash(server.confId);
+    const HASH = getConfigHash(server.confId);
     if (!HASH || server.confHash !== HASH) {
       await writeConfigFile(server);
-      await WGServer.update(id, { confHash: await getConfigHash(server.confId) });
+      await WGServer.update(id, { confHash: getConfigHash(server.confId) });
     }
 
     if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
@@ -125,7 +125,7 @@ export class WGServer {
       ]),
     );
     fs.writeFileSync(confPath, lines.join('\n'), { mode: 0o600 });
-    await WGServer.update(id, { confHash: await getConfigHash(server.confId) });
+    await WGServer.update(id, { confHash: getConfigHash(server.confId) });
 
     const index = await findServerIndex(id);
     if (typeof index !== 'number') {
@@ -141,8 +141,11 @@ export class WGServer {
       }),
     );
 
-    await this.stop(server.id);
-    await this.start(server.id);
+    if (server.status === 'up') {
+      await this.stop(server.id);
+      await this.start(server.id);
+    }
+
     return true;
   }
 
@@ -179,10 +182,12 @@ export class WGServer {
     const serverConfStr = conf.includes('[Peer]') ? conf.split('[Peer]')[0] : conf;
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n');
     fs.writeFileSync(confPath, `${serverConfStr}\n${peersStr}`, { mode: 0o600 });
-    await WGServer.update(server.id, { confHash: await getConfigHash(server.confId) });
+    await WGServer.update(server.id, { confHash: getConfigHash(server.confId) });
 
-    await WGServer.stop(server.id);
-    await WGServer.start(server.id);
+    if (server.status === 'up') {
+      await this.stop(server.id);
+      await this.start(server.id);
+    }
 
     return true;
   }
@@ -208,8 +213,10 @@ export class WGServer {
     await client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }));
     await this.storePeers({ id: server.id, confId: server.confId }, publicKey, updatedPeers);
 
-    await WGServer.stop(serverId);
-    await WGServer.start(serverId);
+    if (server.status === 'up') {
+      await this.stop(serverId);
+      await this.start(serverId);
+    }
 
     return true;
   }
@@ -240,7 +247,7 @@ export class WGServer {
 
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n');
     fs.writeFileSync(confPath, `${serverConfStr}\n${peersStr}`, { mode: 0o600 });
-    await WGServer.update(sd.id, { confHash: await getConfigHash(sd.confId) });
+    await WGServer.update(sd.id, { confHash: getConfigHash(sd.confId) });
   }
 
   static async getFreePeerIp(id: string): Promise<string | undefined> {
@@ -438,7 +445,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   const { privateKey, publicKey } = await generateWgKey();
 
   // inside redis create a config list
-  const confId = (await maxConfId()) + 1;
+  const confId = await getNextFreeConfId();
   const uuid = crypto.randomUUID();
 
   let server: WgServer = {
@@ -487,7 +494,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   fs.writeFileSync(CONFIG_PATH, await genServerConf(server), { mode: 0o600 });
 
   // updating hash of the config
-  await WGServer.update(uuid, { confHash: await getConfigHash(confId) });
+  await WGServer.update(uuid, { confHash: getConfigHash(confId) });
 
   // to ensure interface does not exists
   await Shell.exec(`wg-quick down wg${confId}`, true);
@@ -506,13 +513,26 @@ export async function isIPReserved(ip: string): Promise<boolean> {
 
 export async function isPortReserved(port: number): Promise<boolean> {
   const inUsePorts = [await Network.getInUsePorts(), (await getServers()).map((s) => Number(s.listen))].flat();
-
-  console.log(inUsePorts, port, inUsePorts.includes(port));
   return inUsePorts.includes(port);
 }
 
-export async function getConfigHash(confId: number): Promise<string | undefined> {
-  if (!(await wgConfExists(confId))) {
+export async function isConfigIdReserved(id: number): Promise<boolean> {
+  const ids = (await getServers()).map((s) => s.confId);
+  return ids.includes(id);
+}
+
+export async function getNextFreeConfId(): Promise<number> {
+  let id = maxConfId();
+  for (let i = 0; i < 1_000; i++) {
+    if (!(await isConfigIdReserved(id))) {
+      return id;
+    }
+  }
+  throw new Error('Could not find a free config id');
+}
+
+export function getConfigHash(confId: number): string | undefined {
+  if (!wgConfExists(confId)) {
     return undefined;
   }
 
@@ -524,7 +544,7 @@ export async function getConfigHash(confId: number): Promise<string | undefined>
 export async function writeConfigFile(wg: WgServer): Promise<void> {
   const CONFIG_PATH = path.join(WG_PATH, `wg${wg.confId}.conf`);
   fs.writeFileSync(CONFIG_PATH, await genServerConf(wg), { mode: 0o600 });
-  await WGServer.update(wg.id, { confHash: await getConfigHash(wg.confId) });
+  await WGServer.update(wg.id, { confHash: getConfigHash(wg.confId) });
 }
 
 export function maxConfId(): number {
@@ -533,6 +553,7 @@ export function maxConfId(): number {
   // filter files that start with wg and end with .conf
   const reg = new RegExp(/^wg(\d+)\.conf$/);
   const confs = files.filter((f) => reg.test(f));
+
   const ids = confs.map((f) => {
     const m = f.match(reg);
     if (m) {
@@ -540,6 +561,7 @@ export function maxConfId(): number {
     }
     return 0;
   });
+
   return Math.max(0, ...ids);
 }
 
@@ -588,18 +610,16 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
       `iptables -A OUTPUT ! -o lo ! -d 127.0.0.1 ! -s 127.0.0.1 -p tcp -m tcp --tcp-flags ACK,FIN ACK,FIN -j DROP`,
     ]).join('; ');
     return { up, down: up.replace(/-A/g, '-D') };
-  } else {
-    const up = dynaJoin([
-      `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
-      `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
-      `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
-      `iptables -A FORWARD -i ${wg_inet} -j ACCEPT`,
-      `iptables -A FORWARD -o ${wg_inet} -j ACCEPT`,
-    ]).join('; ');
-    return { up, down: up.replace(/ -A /g, ' -D ') };
   }
 
-  return { up: '', down: '' };
+  const up = dynaJoin([
+    `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
+    `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
+    `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
+    `iptables -A FORWARD -i ${wg_inet} -j ACCEPT`,
+    `iptables -A FORWARD -o ${wg_inet} -j ACCEPT`,
+  ]).join('; ');
+  return { up, down: up.replace(/ -A /g, ' -D ') };
 }
 
 export async function genServerConf(server: WgServer): Promise<string> {

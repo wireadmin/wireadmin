@@ -53,6 +53,9 @@ COPY docker-entrypoint.sh /usr/bin/entrypoint
 RUN chmod +x /usr/bin/entrypoint
 ENTRYPOINT ["/usr/bin/entrypoint"]
 
+HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
+ CMD curl -f http://127.0.0.1:3000/api/health || exit 1
+
 # run the appc
 EXPOSE 5173/tcp
 CMD [ "npm", "run", "dev", "--", "--host" ]
