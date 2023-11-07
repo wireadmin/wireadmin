@@ -13,6 +13,7 @@ COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
 COPY /config/torrc /etc/tor/torrc
+COPY /config/tor-bridges /etc/tor/bridges
 
 # Set the mirror list
 RUN echo "https://uk.alpinelinux.org/alpine/latest-stable/main" > /etc/apk/repositories && \
