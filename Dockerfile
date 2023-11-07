@@ -55,7 +55,11 @@ COPY web .
 
 # build
 ENV NODE_ENV=production
-RUN npm run build
+
+RUN export WG_HOST="127.0.0.1" &&\
+    export AUTH_SECRET="$(openssl rand -base64 32)" &&\
+    export HASHED_PASSWORD="$(openssl passwd -6 -salt $(openssl rand -base64 32) $(openssl rand -base64 32))" &&\
+    npm run build
 
 
 FROM base AS release
@@ -74,6 +78,5 @@ HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
 
 # run the app
-USER bun
 EXPOSE 3000/tcp
 CMD [ "npm", "run", "start" ]
