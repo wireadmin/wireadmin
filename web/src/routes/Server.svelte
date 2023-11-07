@@ -56,6 +56,6 @@
   </div>
 
   <a href={`/${server.id}`} title="Manage the Server" class="hidden md:block">
-    <Button variant="ghost" class="px-3 text-sm">Manage</Button>
+    <Button variant="ghost" size="sm">Manage</Button>
   </a>
 </div>

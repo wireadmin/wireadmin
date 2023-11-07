@@ -32,4 +32,15 @@ export default class Network {
   public static async checkInterfaceExists(inet: string): Promise<boolean> {
     return await Shell.exec(`ip link show | grep ${inet}`, true).then((o) => o.trim() !== '');
   }
+
+  public static async getInUsePorts(): Promise<number[]> {
+    const ports = [];
+    const output = await Shell.exec(`netstat -tulpn | grep LISTEN | awk '{print $4}' | awk -F ':' '{print $NF}'`, true);
+    for (const line of output.split('\n')) {
+      const clean = Number(line.trim());
+      if (!isNaN(clean)) ports.push(clean);
+    }
+
+    return ports;
+  }
 }

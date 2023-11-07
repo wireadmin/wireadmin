@@ -298,7 +298,7 @@ export async function readWgConf(configId: number): Promise<WgServer> {
     id: crypto.randomUUID(),
     confId: configId,
     confHash: null,
-    type: 'direct',
+    tor: false,
     name: '',
     address: '',
     listen: 0,
@@ -424,15 +424,17 @@ export async function generateWgKey(): Promise<WgKey> {
   return { privateKey, publicKey, preSharedKey };
 }
 
-export async function generateWgServer(config: {
+interface GenerateWgServerParams {
   name: string;
   address: string;
-  type: WgServer['type'];
+  tor: boolean;
   port: number;
   dns?: string;
   mtu?: number;
   insertDb?: boolean;
-}): Promise<string> {
+}
+
+export async function generateWgServer(config: GenerateWgServerParams): Promise<string> {
   const { privateKey, publicKey } = await generateWgKey();
 
   // inside redis create a config list
@@ -443,7 +445,7 @@ export async function generateWgServer(config: {
     id: uuid,
     confId,
     confHash: null,
-    type: config.type,
+    tor: config.tor,
     name: config.name,
     address: config.address,
     listen: config.port,
@@ -461,14 +463,11 @@ export async function generateWgServer(config: {
   };
 
   // check if address or port are already reserved
-  const [addresses, ports] = (await getServers()).map((s) => [s.address, s.listen]);
-
-  // check for the conflict
-  if (Array.isArray(addresses) && addresses.includes(config.address)) {
+  if (await isIPReserved(config.address)) {
     throw new Error(`Address ${config.address} is already reserved!`);
   }
 
-  if (Array.isArray(ports) && ports.includes(config.port)) {
+  if (await isPortReserved(config.port)) {
     throw new Error(`Port ${config.port} is already reserved!`);
   }
 
@@ -498,6 +497,18 @@ export async function generateWgServer(config: {
 
   // return server id
   return uuid;
+}
+
+export async function isIPReserved(ip: string): Promise<boolean> {
+  const addresses = (await getServers()).map((s) => s.address);
+  return addresses.includes(ip);
+}
+
+export async function isPortReserved(port: number): Promise<boolean> {
+  const inUsePorts = [await Network.getInUsePorts(), (await getServers()).map((s) => Number(s.listen))].flat();
+
+  console.log(inUsePorts, port, inUsePorts.includes(port));
+  return inUsePorts.includes(port);
 }
 
 export async function getConfigHash(confId: number): Promise<string | undefined> {
@@ -564,18 +575,7 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
   const source = `${s.address}/24`;
   const wg_inet = `wg${s.confId}`;
 
-  if (s.type === 'direct') {
-    const up = dynaJoin([
-      `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
-      `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
-      `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
-      `iptables -A FORWARD -i ${wg_inet} -j ACCEPT`,
-      `iptables -A FORWARD -o ${wg_inet} -j ACCEPT`,
-    ]).join('; ');
-    return { up, down: up.replace(/ -A /g, ' -D ') };
-  }
-
-  if (s.type === 'tor') {
+  if (s.tor) {
     const up = dynaJoin([
       `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
       `iptables -A INPUT -i ${wg_inet} -s ${source} -m state --state NEW -j ACCEPT`,
@@ -588,6 +588,15 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
       `iptables -A OUTPUT ! -o lo ! -d 127.0.0.1 ! -s 127.0.0.1 -p tcp -m tcp --tcp-flags ACK,FIN ACK,FIN -j DROP`,
     ]).join('; ');
     return { up, down: up.replace(/-A/g, '-D') };
+  } else {
+    const up = dynaJoin([
+      `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
+      `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
+      `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
+      `iptables -A FORWARD -i ${wg_inet} -j ACCEPT`,
+      `iptables -A FORWARD -o ${wg_inet} -j ACCEPT`,
+    ]).join('; ');
+    return { up, down: up.replace(/ -A /g, ' -D ') };
   }
 
   return { up: '', down: '' };

@@ -32,7 +32,9 @@ export const PortSchema = z
     },
   );
 
-export const TypeSchema = z.enum(['direct', 'tor']);
+export const TorSchema = z
+  .boolean()
+  .default(false);
 
 export const DnsSchema = z
   .string()
@@ -43,9 +45,13 @@ export const DnsSchema = z
 
 export const MtuSchema = z
   .string()
-  .refine((d) => isBetween(d, 1, 1500), {
+  .refine((d) => !isNaN(Number(d)), {
+    message: 'MTU must be a number',
+  })
+  .refine((d) => !isBetween(Number(d), 1, 1500), {
     message: 'MTU must be between 1 and 1500',
   })
+  .default('1350')
   .optional();
 
 export const ServerId = z.string().uuid({ message: 'Server ID must be a valid UUID' });

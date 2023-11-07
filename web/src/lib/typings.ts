@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { IPV4_REGEX } from '$lib/constants';
-import { NameSchema } from '$lib/wireguard/schema';
+import { NameSchema, TorSchema } from '$lib/wireguard/schema';
 
 export const WgKeySchema = z.object({
   privateKey: z.string(),
@@ -46,7 +46,7 @@ export const WgServerSchema = z
     id: z.string().uuid(),
     confId: z.number(),
     confHash: z.string().nullable(),
-    type: z.enum(['direct', 'bridge', 'tor']),
+    tor: TorSchema,
     name: NameSchema,
     address: z.string().regex(IPV4_REGEX),
     listen: z.number(),

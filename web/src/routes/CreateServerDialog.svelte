@@ -9,14 +9,20 @@
     FormField,
     FormInput,
     FormLabel,
+    FormSwitch,
     FormValidation,
   } from '$lib/components/ui/form';
   import { goto } from '$app/navigation';
   import { FormItem } from '$lib/components/ui/form/index.js';
   import SuperDebug from 'sveltekit-superforms/client/SuperDebug.svelte';
+  import { cn } from '$lib/utils';
+  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '$lib/components/ui/collapsible';
+  import { Button } from '$lib/components/ui/button';
+
+  export let isOpen = false;
+  let loading: boolean = false;
 
   let form: SuperValidated<CreateServerSchemaType>;
-  export let isOpen = false;
 </script>
 
 <Dialog open={isOpen}>
@@ -33,9 +39,18 @@
       method={'POST'}
       let:config
       options={{
+        onSubmit: (s) => {
+          loading = true;
+        },
+        onError: (e) => {
+          console.error('Client-side: FormError:', e);
+        },
         onResult: ({ result }) => {
+          loading = false;
           if (result.type === 'success') {
-            goto('/');
+            goto(`/${result.data.serverId}`);
+          } else {
+            console.error('Server-failure: Result:', result);
           }
         },
       }}
@@ -66,26 +81,50 @@
         </FormItem>
       </FormField>
 
-      <FormField {config} name={'dns'}>
-        <FormItem>
-          <FormLabel>DNS</FormLabel>
-          <FormInput placeholder={'e.g. 1.1.1.1'} type={'text'} />
-          <FormDescription>Optional. This is the DNS server that will be pushed to clients.</FormDescription>
-          <FormValidation />
-        </FormItem>
-      </FormField>
+      <Collapsible>
+        <CollapsibleTrigger asChild let:builder>
+          <Button builders={[builder]} variant="ghost" size="sm" class="mb-4 -mr-2">
+            <i class="far fa-cog mr-2"></i>
+            <span>Advanced Options</span>
+          </Button>
+        </CollapsibleTrigger>
 
-      <FormField {config} name={'mtu'}>
-        <FormItem>
-          <FormLabel>MTU</FormLabel>
-          <FormInput placeholder={'1350'} type={'text'} />
-          <FormDescription>Optional. Recommended to leave this blank.</FormDescription>
-          <FormValidation />
-        </FormItem>
-      </FormField>
+        <CollapsibleContent class="space-y-6">
+          <FormField {config} name={'tor'}>
+            <FormItem class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <FormLabel>Use Tor</FormLabel>
+                <FormDescription>This will route all outgoing traffic through Tor.</FormDescription>
+              </div>
+              <FormSwitch />
+            </FormItem>
+          </FormField>
+
+          <FormField {config} name={'dns'}>
+            <FormItem>
+              <FormLabel>DNS</FormLabel>
+              <FormInput placeholder={'e.g. 1.1.1.1'} type={'text'} />
+              <FormDescription>Optional. This is the DNS server that will be pushed to clients.</FormDescription>
+              <FormValidation />
+            </FormItem>
+          </FormField>
+
+          <FormField {config} name={'mtu'}>
+            <FormItem>
+              <FormLabel>MTU</FormLabel>
+              <FormInput placeholder={'1350'} type={'text'} />
+              <FormDescription>Optional. Recommended to leave this blank.</FormDescription>
+              <FormValidation />
+            </FormItem>
+          </FormField>
+        </CollapsibleContent>
+      </Collapsible>
 
       <DialogFooter>
-        <FormButton type="submit">Create</FormButton>
+        <FormButton>
+          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}></i>
+          Create
+        </FormButton>
       </DialogFooter>
     </Form>
   </DialogContent>

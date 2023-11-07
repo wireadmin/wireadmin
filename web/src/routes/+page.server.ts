@@ -1,6 +1,13 @@
 import { type Actions, error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { findServer, generateWgServer, getServers, WGServer } from '$lib/wireguard';
+import {
+  findServer,
+  generateWgServer,
+  getServers,
+  isIPReserved,
+  isPortReserved,
+  WGServer,
+} from '$lib/wireguard';
 import { setError, superValidate } from 'sveltekit-superforms/server';
 import { CreateServerSchema } from './schema';
 import { NameSchema } from '$lib/wireguard/schema';
@@ -39,20 +46,32 @@ export const actions: Actions = {
       return setError(form, 'Bad Request');
     }
 
-    const { name, address, port, dns, mtu = '1350' } = form.data;
+    const { name, address, tor = false, port, dns, mtu = '1350' } = form.data;
 
-    const serverId = await generateWgServer({
-      name,
-      address,
-      port: Number(port),
-      type: 'direct',
-      mtu: Number(mtu),
-      dns,
-    });
+    try {
+      if (await isIPReserved(address)) {
+        return setError(form, 'address', `IP ${address} is already reserved!`);
+      }
 
-    return {
-      ok: true,
-      serverId,
-    };
+      if (await isPortReserved(Number(port))) {
+        return setError(form, 'port', `Port ${port} is already reserved!`);
+      }
+
+      const serverId = await generateWgServer({
+        name,
+        address,
+        port: Number(port),
+        tor,
+        mtu: Number(mtu),
+        dns,
+      });
+
+      return {
+        ok: true,
+        serverId,
+      };
+    } catch (e: any) {
+      return setError(form, e.message);
+    }
   },
 };
