@@ -38,7 +38,22 @@ export const actions: Actions = {
     }
 
     const token = await generateToken();
-    event.cookies.set('authorization', token);
+
+    const { ORIGIN } = process.env;
+    if (ORIGIN) {
+      console.log('[+] TEST ONLY', 'ORIGIN', ORIGIN);
+
+      const secure = ORIGIN.startsWith('https://');
+      event.cookies.set('authorization', token, {
+        secure,
+        httpOnly: true,
+        path: '/'
+      });
+
+    } else {
+      event.cookies.set('authorization', token);
+    }
+
 
     return { ok: true };
   },
