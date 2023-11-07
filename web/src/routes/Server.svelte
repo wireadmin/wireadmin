@@ -43,15 +43,11 @@
       </div>
     </div>
     <div class={'flex col-span-4 justify-end'}>
-      <Badge variant={server.status === 'up' ? 'success' : 'destructive'}>
-        {#if server.status === 'up'}
-          <span class="hidden md:inline">Online</span>
-          <span class="inline md:hidden">Up</span>
-        {:else}
-          <span class="hidden md:inline">Offline</span>
-          <span class="inline md:hidden">Down</span>
-        {/if}
-      </Badge>
+      {#if server.status === 'up'}
+        <Badge variant="success">Online</Badge>
+      {:else}
+        <Badge variant="destructive">Offline</Badge>
+      {/if}
     </div>
   </div>
 

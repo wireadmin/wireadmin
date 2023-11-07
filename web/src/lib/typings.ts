@@ -41,6 +41,8 @@ export const PeerSchema = z
 
 export type Peer = z.infer<typeof PeerSchema>;
 
+export const WgServerStatusSchema = z.enum(['up', 'down']);
+
 export const WgServerSchema = z
   .object({
     id: z.string().uuid(),
@@ -58,7 +60,7 @@ export const WgServerSchema = z
     peers: z.array(PeerSchema),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
-    status: z.enum(['up', 'down']),
+    status: WgServerStatusSchema,
   })
   .merge(WgKeySchema.omit({ preSharedKey: true }));
 

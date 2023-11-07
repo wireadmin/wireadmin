@@ -71,7 +71,8 @@ export const actions: Actions = {
         serverId,
       };
     } catch (e: any) {
-      return setError(form, e.message);
+      console.error('Exception:', e);
+      return setError(form, 'Unhandled Exception');
     }
   },
 };

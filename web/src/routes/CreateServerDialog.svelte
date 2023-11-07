@@ -14,7 +14,6 @@
   } from '$lib/components/ui/form';
   import { goto } from '$app/navigation';
   import { FormItem } from '$lib/components/ui/form/index.js';
-  import SuperDebug from 'sveltekit-superforms/client/SuperDebug.svelte';
   import { cn } from '$lib/utils';
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '$lib/components/ui/collapsible';
   import { Button } from '$lib/components/ui/button';
@@ -30,7 +29,6 @@
     <DialogHeader>
       <DialogTitle>Create Server</DialogTitle>
     </DialogHeader>
-    <SuperDebug data={form} />
     <Form
       {form}
       schema={CreateServerSchema}
@@ -43,6 +41,7 @@
           loading = true;
         },
         onError: (e) => {
+          loading = false;
           console.error('Client-side: FormError:', e);
         },
         onResult: ({ result }) => {

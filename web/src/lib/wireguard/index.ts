@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import deepmerge from 'deepmerge';
-import { enc, SHA256 } from 'crypto-js';
+import SHA256 from 'crypto-js/sha256';
+import Hex from 'crypto-js/enc-hex';
 import type { Peer, WgKey, WgServer } from '$lib/typings';
 import Network from '$lib/network';
 import Shell from '$lib/shell';
@@ -57,7 +58,9 @@ export class WGServer {
     }
 
     await this.stop(id);
-    fs.unlinkSync(path.join(WG_PATH, `wg${server.confId}.conf`));
+    if (wgConfExists(server.confId)) {
+      fs.unlinkSync(path.join(WG_PATH, `wg${server.confId}.conf`));
+    }
 
     const index = await findServerIndex(id);
     if (typeof index !== 'number') {
@@ -538,7 +541,7 @@ export function getConfigHash(confId: number): string | undefined {
 
   const confPath = path.join(WG_PATH, `wg${confId}.conf`);
   const conf = fs.readFileSync(confPath, 'utf-8');
-  return enc.Hex.stringify(SHA256(conf));
+  return Hex.stringify(SHA256(conf));
 }
 
 export async function writeConfigFile(wg: WgServer): Promise<void> {
