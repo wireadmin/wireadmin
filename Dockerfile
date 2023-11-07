@@ -5,10 +5,6 @@ WORKDIR /app
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
@@ -40,6 +36,10 @@ RUN rm -rf /var/cache/apk/*
 
 FROM base AS deps
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
 RUN mkdir -p /temp/dev
 COPY web/package.json web/pnpm-lock.yaml /temp/dev/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/dev/
@@ -55,11 +55,7 @@ COPY web .
 
 # build
 ENV NODE_ENV=production
-
-RUN export WG_HOST="127.0.0.1" &&\
-    export AUTH_SECRET="$(openssl rand -base64 32)" &&\
-    export HASHED_PASSWORD="$(openssl passwd -6 -salt $(openssl rand -base64 32) $(openssl rand -base64 32))" &&\
-    npm run build
+RUN npm run build
 
 
 FROM base AS release

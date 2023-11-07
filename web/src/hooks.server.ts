@@ -1,8 +1,10 @@
 import type { Handle } from '@sveltejs/kit';
 import { verifyToken } from '$lib/auth';
-import { HASHED_PASSWORD } from '$env/static/private';
+import 'dotenv/config';
 
 export const handle: Handle = async ({ event, resolve }) => {
+  const { HASHED_PASSWORD } = process.env;
+
   if (!!HASHED_PASSWORD && !AUTH_EXCEPTION.includes(event.url.pathname)) {
     const token = event.cookies.get('authorization');
     const token_valid = await verifyToken(token ?? '');

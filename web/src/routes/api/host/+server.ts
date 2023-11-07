@@ -1,22 +1,22 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { WG_HOST } from '$env/static/private';
 import Shell from '$lib/shell';
+import 'dotenv/config';
 
 export const GET: RequestHandler = async () => {
 
-  let HOSTNAME = WG_HOST;
+  let { WG_HOST } = process.env
 
   // if the host is not set, then we are using the server's public IP
-  if (!HOSTNAME) {
+  if (!WG_HOST) {
     const resp = await Shell.exec('curl -s ifconfig.me', true);
-    HOSTNAME = resp.trim();
+    WG_HOST = resp.trim();
   }
 
   // check if WG_HOST is still not set
-  if (!HOSTNAME) {
+  if (!WG_HOST) {
     console.error('WG_HOST is not set');
     return new Response('NOT_SET', { status: 500, headers: { 'Content-Type': 'text/plain' } });
   }
 
-  return new Response(HOSTNAME, { status: 200, headers: { 'Content-Type': 'text/plain' } });
+  return new Response(WG_HOST, { status: 200, headers: { 'Content-Type': 'text/plain' } });
 };

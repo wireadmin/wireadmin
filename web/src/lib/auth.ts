@@ -1,5 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { AUTH_SECRET } from '$env/static/private';
+import 'dotenv/config';
+import Hex from 'crypto-js/enc-hex';
+import { randomUUID } from 'node:crypto';
+import SHA256 from 'crypto-js/sha256';
+
+export const AUTH_SECRET = process.env.AUTH_SECRET || Hex.stringify(SHA256(randomUUID()));
 
 export async function generateToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
