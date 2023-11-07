@@ -1,10 +1,10 @@
-import { fail } from '@sveltejs/kit';
 import type { Actions } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { setError, superValidate } from 'sveltekit-superforms/server';
 import { formSchema } from './schema';
-import { HASHED_PASSWORD } from '$env/static/private';
 import { generateToken } from '$lib/auth';
+import 'dotenv/config';
 
 export const load: PageServerLoad = () => {
   return {
@@ -20,10 +20,21 @@ export const actions: Actions = {
       return fail(400, { ok: false, message: 'Bad Request', form });
     }
 
-    const { password } = form.data;
+    const { HASHED_PASSWORD } = process.env;
+    if (HASHED_PASSWORD) {
+      const { password } = form.data;
 
-    if (HASHED_PASSWORD.toLowerCase() !== Buffer.from(password.toString()).toString('hex').toLowerCase()) {
-      return setError(form, 'password', 'Incorrect password.');
+      const hashed = HASHED_PASSWORD.toLowerCase();
+      const receivedHashed = Buffer.from(password.toString()).toString('hex').toLowerCase();
+
+      if (hashed !== receivedHashed) {
+        console.log('[+] TEST ONLY', password, hashed, receivedHashed);
+        return setError(form, 'password', 'Incorrect password.');
+      }
+    }
+
+    if (!HASHED_PASSWORD) {
+      console.warn('No password is set!');
     }
 
     const token = await generateToken();
