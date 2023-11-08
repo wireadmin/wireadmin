@@ -525,13 +525,13 @@ export async function isConfigIdReserved(id: number): Promise<boolean> {
 }
 
 export async function getNextFreeConfId(): Promise<number> {
-  let id = maxConfId();
-  for (let i = 0; i < 1_000; i++) {
-    if (!(await isConfigIdReserved(id))) {
-      return id;
+  let id = maxConfId() + 1;
+  for (let i = id; i < 1_000; i++) {
+    if (!(await isConfigIdReserved(i))) {
+      return i;
     }
   }
-  throw new Error('Could not find a free config id');
+  throw new Error('WireGuard: Error: Could not find a free config id');
 }
 
 export function getConfigHash(confId: number): string | undefined {

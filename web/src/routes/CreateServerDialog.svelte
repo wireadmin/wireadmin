@@ -1,7 +1,14 @@
 <script lang="ts">
   import { CreateServerSchema, type CreateServerSchemaType } from './schema';
   import type { SuperValidated } from 'sveltekit-superforms';
-  import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
+  import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from '$lib/components/ui/dialog';
   import {
     Form,
     FormButton,
@@ -18,13 +25,15 @@
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '$lib/components/ui/collapsible';
   import { Button } from '$lib/components/ui/button';
 
-  export let isOpen = false;
   let loading: boolean = false;
 
   let form: SuperValidated<CreateServerSchemaType>;
 </script>
 
-<Dialog open={isOpen}>
+<Dialog>
+  <DialogTrigger asChild let:builder>
+    <slot {builder} />
+  </DialogTrigger>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Create Server</DialogTitle>

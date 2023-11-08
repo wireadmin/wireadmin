@@ -8,7 +8,6 @@
   import fetchAction from '$lib/fetch-action';
 
   export let data: PageData;
-  export let isOpen = false;
 
   const handleRename = async (id: string, name: string) => {
     const resp = await fetchAction({
@@ -32,10 +31,13 @@
 <BasePage showLogout={true}>
   <div class={'flex items-center justify-between py-3 px-2'}>
     <h2 class={'font-bold text-xl'}>Hello there 👋</h2>
-    <Button on:click={() => (isOpen = true)}>
-      <i class="fas fa-plus mr-2"></i>
-      Create Server
-    </Button>
+
+    <CreateServerDialog let:builder>
+      <Button builders={[builder]}>
+        <i class="fas fa-plus mr-2"></i>
+        Create Server
+      </Button>
+    </CreateServerDialog>
   </div>
 
   <div class="space-y-3.5">
@@ -58,5 +60,3 @@
     {/if}
   </div>
 </BasePage>
-
-<CreateServerDialog {isOpen} />

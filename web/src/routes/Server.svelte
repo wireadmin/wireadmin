@@ -18,7 +18,9 @@
   <div class="w-full md:w-2/3 flex items-center gap-x-2">
     <div class="flex grow">
       <div class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}>
-        <i class={'fa-solid fa-server text-gray-400 text-xl'} />
+        <i
+          class={cn(server.tor ? 'fa-solid fa-onion text-purple-700' : 'fa-solid fa-server text-gray-400', 'text-xl')}
+        />
       </div>
 
       <div class="h-full flex flex-col justify-between col-span-4 gap-y-1.5">

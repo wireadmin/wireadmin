@@ -1,9 +1,16 @@
 <script lang="ts">
   import { cn } from '$lib/utils';
   import { createEventDispatcher } from 'svelte';
+  import { Button } from 'bits-ui';
+
+  type $$Props = Button.Props & {
+    disabled?: boolean;
+    loading?: boolean;
+  };
 
   export let disabled: boolean = false;
   export let loading: boolean = false;
+  export let builders: $$Props['builders'] = [];
 
   const dispatch = createEventDispatcher();
 
@@ -13,10 +20,9 @@
   }
 </script>
 
-<div
-  aria-roledescription="Action"
-  role="button"
-  tabindex="0"
+<Button.Root
+  {builders}
+  {...$$restProps}
   class={cn(
     'group flex items-center justify-center w-10 aspect-square rounded-md',
     'bg-gray-200/80 hover:bg-gray-100/50',
@@ -31,5 +37,9 @@
     if (e.key === 'Enter') handleClick();
   }}
 >
-  <slot />
-</div>
+  {#if loading}
+    <i class="far fa-spinner-third fa-spin" />
+  {:else}
+    <slot />
+  {/if}
+</Button.Root>

@@ -13,7 +13,6 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   export let data: PageData;
-  export let dialogOpen: boolean = false;
 
   const handleRename = async (peerId: string, name: string) => {
     const resp = await fetchAction({
@@ -75,8 +74,6 @@
     await invalidateAll();
   };
 </script>
-
-<CreatePeerDialog open={dialogOpen} on:close={() => (dialogOpen = false)} />
 
 <Card>
   <CardHeader>
@@ -166,12 +163,16 @@
       {/each}
     </CardContent>
     <CardFooter>
-      <Button on:click={() => (dialogOpen = true)}>Add Client</Button>
+      <CreatePeerDialog let:builder>
+        <Button size="sm" builders={[builder]}>Add Client</Button>
+      </CreatePeerDialog>
     </CardFooter>
   {:else}
     <CardContent>
       <div>No Clients!</div>
-      <Button on:click={() => (dialogOpen = true)}>Add Client</Button>
+      <CreatePeerDialog let:builder>
+        <Button size="sm" builders={[builder]}>Add Client</Button>
+      </CreatePeerDialog>
     </CardContent>
   {/if}
 </Card>

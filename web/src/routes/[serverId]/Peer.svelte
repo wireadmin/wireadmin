@@ -6,6 +6,7 @@
   import PeerActionButton from './PeerActionButton.svelte';
   import { createEventDispatcher, onMount } from 'svelte';
   import { getPeerConf } from '$lib/wireguard/utils';
+  import { QRCodeDialog } from '$lib/components/qrcode-dialog';
 
   export let peer: Peer;
 
@@ -15,7 +16,7 @@
 
   export let conf: string | undefined = undefined;
 
-  export let isLoading: boolean = false;
+  let isLoading: boolean = false;
 
   onMount(async () => {
     conf = await getPeerConf({
@@ -35,7 +36,7 @@
     }
     console.log('conf', conf);
     // create a blob
-    const blob = new Blob([conf], { type: 'text/plain' });
+    const blob = new Blob([ conf ], { type: 'text/plain' });
     // create a link
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
@@ -45,8 +46,6 @@
     // remove the link
     link.remove();
   };
-
-  const handleQRCode = async () => {};
 
   const handleRename = (value: string) => {
     dispatch('rename', value);
@@ -58,7 +57,7 @@
 </script>
 
 <div class="flex items-center justify-between p-4 border border-neutral-200/60 rounded-md hover:border-neutral-200">
-  <div class="flex items-center gap-2.5">
+  <div class="flex items-center gap-x-2">
     <div class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}>
       <i class={'fas fa-user text-gray-400 text-lg'} />
     </div>
@@ -80,16 +79,18 @@
   </div>
   <div class="flex items-center justify-center gap-x-3">
     <!-- QRCode -->
-    <PeerActionButton disabled={isLoading} on:click={handleQRCode}>
-      <i class={'fal text-neutral-700 group-hover:text-primary fa-qrcode'} />
-    </PeerActionButton>
+    <QRCodeDialog let:builder content={conf}>
+      <PeerActionButton builders={[builder]} disabled={isLoading}>
+        <i class={'fal text-neutral-700 group-hover:text-primary fa-qrcode'} />
+      </PeerActionButton>
+    </QRCodeDialog>
 
     <!-- Download -->
     <PeerActionButton disabled={isLoading} on:click={handleDownload}>
       <i class={'fal text-neutral-700 group-hover:text-primary fa-download'} />
     </PeerActionButton>
 
-    <!-- Download -->
+    <!-- Remove -->
     <PeerActionButton loading={isLoading} on:click={handleRemove}>
       <i class={'fal text-neutral-700 group-hover:text-primary text-lg fa-trash-can'} />
     </PeerActionButton>

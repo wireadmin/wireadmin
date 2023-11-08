@@ -1,7 +1,14 @@
 <script lang="ts">
   import { CreatePeerSchema, type CreatePeerSchemaType } from './schema';
   import type { SuperValidated } from 'sveltekit-superforms';
-  import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
+  import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from '$lib/components/ui/dialog';
   import { Form, FormButton, FormField, FormInput, FormLabel, FormValidation } from '$lib/components/ui/form';
   import { FormItem } from '$lib/components/ui/form/index.js';
   import { cn } from '$lib/utils';
@@ -10,7 +17,6 @@
 
   const dispatch = createEventDispatcher();
 
-  export let open = false;
   let loading: boolean = false;
 
   let form: SuperValidated<CreatePeerSchemaType>;
@@ -21,7 +27,10 @@
   };
 </script>
 
-<Dialog {open}>
+<Dialog>
+  <DialogTrigger asChild let:builder>
+    <slot {builder} />
+  </DialogTrigger>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Create Peer</DialogTitle>

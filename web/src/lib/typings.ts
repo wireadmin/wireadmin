@@ -76,4 +76,10 @@ export type APISuccessResponse<D> = {
   result: D;
 };
 
+export type SafeReturn<T, K = any> = LeastOne<{
+  data: T,
+  error: K
+}>
+
 export type LeastOne<T, U = { [K in keyof T]: Pick<T, K> }> = Partial<T> & U[keyof U];
+

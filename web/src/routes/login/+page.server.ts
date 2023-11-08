@@ -28,7 +28,6 @@ export const actions: Actions = {
       const receivedHashed = Buffer.from(password.toString()).toString('hex').toLowerCase();
 
       if (hashed !== receivedHashed) {
-        console.log('[+] TEST ONLY', password, hashed, receivedHashed);
         return setError(form, 'password', 'Incorrect password.');
       }
     }
@@ -41,19 +40,15 @@ export const actions: Actions = {
 
     const { ORIGIN } = process.env;
     if (ORIGIN) {
-      console.log('[+] TEST ONLY', 'ORIGIN', ORIGIN);
-
       const secure = ORIGIN.startsWith('https://');
       event.cookies.set('authorization', token, {
         secure,
         httpOnly: true,
-        path: '/'
+        path: '/',
       });
-
     } else {
       event.cookies.set('authorization', token);
     }
-
 
     return { ok: true };
   },
