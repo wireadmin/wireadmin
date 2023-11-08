@@ -46,7 +46,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 RUN mkdir -p /temp/prod
 COPY web/package.json web/pnpm-lock.yaml /temp/prod/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/prod/
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prod -C /temp/prod/
 
 
 FROM base AS build
