@@ -11,6 +11,7 @@
   import { CopiableText } from '$lib/components/copiable-text';
   import { MiddleEllipsis } from '$lib/components/middle-ellipsis';
   import { goto, invalidateAll } from '$app/navigation';
+  import { Empty } from '$lib/components/empty';
 
   export let data: PageData;
 
@@ -97,7 +98,7 @@
     </DetailRow>
     <DetailRow label={'Public Key'}>
       <CopiableText value={data.server.publicKey}>
-        <MiddleEllipsis content={data.server.publicKey} maxLength={16} />
+        <MiddleEllipsis content={data.server.publicKey} maxLength={12} />
       </CopiableText>
     </DetailRow>
   </CardContent>
@@ -162,17 +163,14 @@
         />
       {/each}
     </CardContent>
-    <CardFooter>
-      <CreatePeerDialog let:builder>
-        <Button size="sm" builders={[builder]}>Add Client</Button>
-      </CreatePeerDialog>
-    </CardFooter>
   {:else}
     <CardContent>
-      <div>No Clients!</div>
-      <CreatePeerDialog let:builder>
-        <Button size="sm" builders={[builder]}>Add Client</Button>
-      </CreatePeerDialog>
+      <Empty description={'No Clients!'} />
     </CardContent>
   {/if}
+  <CardFooter>
+    <CreatePeerDialog let:builder>
+      <Button size="sm" builders={[builder]}>Add Client</Button>
+    </CreatePeerDialog>
+  </CardFooter>
 </Card>

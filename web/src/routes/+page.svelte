@@ -6,6 +6,7 @@
   import Server from './Server.svelte';
   import { Card, CardHeader, CardTitle } from '$lib/components/ui/card';
   import fetchAction from '$lib/fetch-action';
+  import { Empty } from '$lib/components/empty';
 
   export let data: PageData;
 
@@ -41,10 +42,10 @@
   </div>
 
   <div class="space-y-3.5">
-    {#if data.servers?.length < 1}
-      <Card>No Servers Found</Card>
-    {:else}
-      <Card>
+    <Card>
+      {#if data.servers?.length < 1}
+        <Empty description={'No server!'} />
+      {:else}
         <CardHeader>
           <CardTitle>Servers</CardTitle>
         </CardHeader>
@@ -56,7 +57,7 @@
             }}
           />
         {/each}
-      </Card>
-    {/if}
+      {/if}
+    </Card>
   </div>
 </BasePage>
