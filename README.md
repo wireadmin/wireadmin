@@ -27,7 +27,18 @@ To install Docker, go to the official documentation and install a version that m
 
 - [Install Docker Engine](https://docs.docker.com/engine/install/)
 
-### 2. Run WireAdmin
+### 2. Persistent Data
+
+WireAdmin uses `redis` to store the WireGuard configurations and their data at `/data`. It's important to mount a volume
+at this location to ensure that your data is not lost during container restarts or updates.
+
+#### Create a docker volume
+
+```bash
+docker volume create wireadmin-data --driver local
+```
+
+### 3. Run WireAdmin
 
 Install WireAdmin using the command line:
 
@@ -39,7 +50,7 @@ docker run -d \
  -e UI_PASSWORD="🔐OPTIONAL_ADMIN_PASSWORD" \
  -p "3000:3000/tcp" \
  -p "51820:51820/udp" \
- -v "~/wireadmin-data:/data" \
+ -v "wireadmin-data:/data" \
  --cap-add=NET_ADMIN \
  --cap-add=SYS_MODULE \
  --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
@@ -52,7 +63,7 @@ Please note that the port `3000` is for the UI and it is up to you to remove it 
 > IMPORTANT: When creating each server, ensure that you add the port exposure through Docker. (The port `51820` is added
 > as an example.)
 
-### 3. Enjoy
+### 4. Enjoy 🎉
 
 Please feel free to open an issue if you have any questions or suggestions.
 
@@ -60,12 +71,13 @@ Please feel free to open an issue if you have any questions or suggestions.
 
 These options can be configured by setting environment variables using `-e KEY="VALUE"` in the `docker run` command.
 
-| Option            | Description                                                                                                          | Default | Optional |
-|-------------------|----------------------------------------------------------------------------------------------------------------------|---------|----------|
-| `WG_HOST`         | The public IP address of the WireGuard server.                                                                       | `""`    |          |
-| `UI_PASSWORD`     | The password for the admin UI.                                                                                       | `""`    | ✔️       |
-| `TOR_USE_BRIDGES` | Set this to `true` for quick setup of `obfs4` Tor bridges. You have to mount the bridges file at `/etc/tor/bridges`. | `""`    | ✔️       |
-| `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)                                        | `""`    | ✔️       |
+| Option            | Description                                                                                                                          | Default | Optional |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------|---------|----------|
+| `WG_HOST`         | The public IP address of the WireGuard server.                                                                                       | `""`    |          |
+| `UI_PASSWORD`     | The password for the admin UI.                                                                                                       | `""`    | ✔️       |
+| `ORIGIN`          | In case you want to access the web-admin remotely, you must set this to the host you are using, for example, `http://hostname:port`. | `""`    | ✔️       |
+| `TOR_USE_BRIDGES` | Set this to `true` for quick setup of `obfs4` Tor bridges. You have to mount the bridges file at `/etc/tor/bridges`.                 | `""`    | ✔️       |
+| `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)                                                        | `""`    | ✔️       |
 
 ## Support the Project
 
