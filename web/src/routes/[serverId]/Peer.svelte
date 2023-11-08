@@ -34,7 +34,6 @@
       console.error('conf is null');
       return;
     }
-    console.log('conf', conf);
     // create a blob
     const blob = new Blob([ conf ], { type: 'text/plain' });
     // create a link

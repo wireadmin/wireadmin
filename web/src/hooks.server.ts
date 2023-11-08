@@ -13,21 +13,15 @@ export const handle: Handle = async ({ event, resolve }) => {
     const is_login_page = event.url.pathname === '/login';
 
     if (!token_valid && !is_login_page) {
-      console.log('handle', event.url.pathname, 'invalid token');
       return redirect;
     }
 
     if (token_valid && is_login_page) {
-      console.log('handle', 'already logged in');
       return new Response(null, { status: 302, headers: { location: '/' } });
     }
   }
 
-  const resp = await resolve(event);
-
-  console.log('handle', event.url.pathname, resp.status);
-
-  return resp;
+  return resolve(event);
 };
 
 const AUTH_EXCEPTION = ['/api/health'];
