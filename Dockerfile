@@ -11,12 +11,6 @@ COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bi
 COPY /config/torrc /etc/tor/torrc
 COPY /config/tor-bridges /etc/tor/bridges
 
-# Set the mirror list
-RUN echo "https://uk.alpinelinux.org/alpine/latest-stable/main" > /etc/apk/repositories && \
-    echo "https://mirror.bardia.tech/alpine/latest-stable/main" >> /etc/apk/repositories && \
-    echo "https://uk.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
-    echo "https://mirror.bardia.tech/alpine/latest-stable/community" >> /etc/apk/repositories
-
 # Update and upgrade packages
 RUN apk update && apk upgrade
 
@@ -28,10 +22,9 @@ RUN apk add -U --no-cache \
     openssl \
     dumb-init \
     tor \
-    redis
-
-# Clear cache
-RUN rm -rf /var/cache/apk/*
+    redis \
+    # Clear cache
+    && rm -rf /var/cache/apk/*
 
 
 FROM base AS deps
@@ -40,11 +33,9 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-RUN mkdir -p /temp/dev
 COPY web/package.json web/pnpm-lock.yaml /temp/dev/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/dev/
 
-RUN mkdir -p /temp/prod
 COPY web/package.json web/pnpm-lock.yaml /temp/prod/
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prod -C /temp/prod/
 
