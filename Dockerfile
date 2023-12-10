@@ -9,22 +9,19 @@ COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
 COPY /config/torrc /etc/tor/torrc
-COPY /config/tor-bridges /etc/tor/bridges
 
 # Update and upgrade packages
-RUN apk update && apk upgrade
-
-# Install required packages
-RUN apk add -U --no-cache \
-    iproute2 iptables net-tools \
-    screen vim curl bash \
-    wireguard-tools \
-    openssl \
-    dumb-init \
-    tor \
-    redis \
-    # Clear cache
-    && rm -rf /var/cache/apk/*
+RUN apk update && apk upgrade \
+  # Install required packages
+  && apk add -U --no-cache \
+  iproute2 iptables net-tools \
+  screen vim curl bash \
+  wireguard-tools \
+  openssl \
+  tor \
+  redis \
+  # Clear APK cache
+  && rm -rf /var/cache/apk/*
 
 
 FROM base AS deps
@@ -57,12 +54,14 @@ COPY --from=build /app/package.json .
 
 ENV NODE_ENV=production
 
-COPY docker-entrypoint.sh /usr/bin/entrypoint
-RUN chmod +x /usr/bin/entrypoint
-ENTRYPOINT ["/usr/bin/entrypoint"]
+COPY docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
+
+VOLUME ["/etc/torrc.d"]
 
 # run the app
 EXPOSE 3000/tcp

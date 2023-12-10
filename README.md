@@ -74,7 +74,7 @@ These options can be configured by setting environment variables using `-e KEY="
 | `WG_HOST`         | The public IP address of the WireGuard server.                                                                                       |          |
 | `UI_PASSWORD`     | The password for the admin UI.                                                                                                       |          |
 | `ORIGIN`          | In case you want to access the web-admin remotely, you must set this to the host you are using, for example, `http://hostname:port`. | ✔️       |
-| `TOR_USE_BRIDGES` | Set this to `true` for quick setup of `obfs4` Tor bridges. You have to mount the bridges file at `/etc/tor/bridges`.                 | ✔️       |
+| `TOR_USE_BRIDGES` | Set this to `1` and then mount the bridges file at `/etc/torrc.d/bridges.conf`.                                                      | ✔️       |
 | `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)                                                        | ✔️       |
 
 ## Support the Project
