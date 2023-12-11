@@ -45,7 +45,10 @@ COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
-VOLUME ["/etc/torrc.d"]
+RUN mkdir -p /data && chmod 700 /data
+RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
+
+VOLUME ["/etc/torrc.d", "/data"]
 
 # run the appc
 EXPOSE 5173/tcp

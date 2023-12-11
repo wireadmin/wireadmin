@@ -22,14 +22,12 @@ to_camel_case() {
   echo "${1}" | awk -F_ '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1' OFS=""
 }
 
-# Checking if there is /data folder
-if [ ! -d "/data" ]; then
-  mkdir -p /data
-  chmod 700 /data
+mkdir -p /var/vlogs
+
+if [ ! -f "${ENV_FILE}" ]; then
+  echo "" >"${ENV_FILE}"
 fi
 
-mkdir -p /var/vlogs
-touch "${ENV_FILE}"
 chmod 400 "${ENV_FILE}"
 
 if ! grep -q "AUTH_SECRET" "${ENV_FILE}"; then
@@ -71,11 +69,19 @@ remove_duplicated_lines "${TOR_CONFIG}"
 
 # Checking if there is /etc/torrc.d folder and if there is
 # any file in it, adding them to the torrc file
-if [ -d "/etc/torrc.d" ]; then
-  for file in /etc/torrc.d/*; do
+TORRC_DIR_FILES=$(find /etc/torrc.d -type f -name "*.conf")
+if [ -n "$TORRC_DIR_FILES" ]; then
+  for file in $TORRC_DIR_FILES; do
     cat "$file" >>"${TOR_CONFIG}"
   done
 fi
+
+# Remove comment line with single Hash
+sed -i '/^#\([^#]\)/d' "${TOR_CONFIG}"
+# Remove options with no value. (KEY[:space:]{...VALUE})
+sed -i '/^[^ ]* $/d' "${TOR_CONFIG}"
+# Remove double empty lines
+sed -i '/^$/N;/^\n$/D' "${TOR_CONFIG}"
 
 # Start Tor on the background
 screen -L -Logfile /var/vlogs/tor -dmS tor \

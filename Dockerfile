@@ -61,7 +61,10 @@ ENTRYPOINT ["/entrypoint.sh"]
 HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
 
-VOLUME ["/etc/torrc.d"]
+RUN mkdir -p /data && chmod 700 /data
+RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
+
+VOLUME ["/etc/torrc.d", "/data"]
 
 # run the app
 EXPOSE 3000/tcp
