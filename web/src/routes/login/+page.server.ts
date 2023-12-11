@@ -50,6 +50,6 @@ export const actions: Actions = {
       event.cookies.set('authorization', token);
     }
 
-    return { ok: true };
+    return { form, ok: true };
   },
 };

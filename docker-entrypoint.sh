@@ -11,27 +11,25 @@ remove_duplicated_lines() {
   mv "$temp_file" "$file"
 }
 
-remove_duplicate_env() {
-  local file="$1"
-  local temp_file="/tmp/$(basename "$file")"
-  awk -F "=" -e '!seen[$1]++' "$file" >"$temp_file"
-  mv "$temp_file" "$file"
-}
-
 to_camel_case() {
   echo "${1}" | awk -F_ '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1' OFS=""
 }
 
+echo "                                                   "
+echo " _       ___           ___       __          _     "
+echo "| |     / (_)_______  /   | ____/ /___ ___  (_)___ "
+echo "| | /| / / / ___/ _ \/ /| |/ __  / __ \`__ \/ / __ \\"
+echo "| |/ |/ / / /  /  __/ ___ / /_/ / / / / / / / / / /"
+echo "|__/|__/_/_/   \___/_/  |_\__,_/_/ /_/ /_/_/_/ /_/ "
+echo "                                                   "
+
 mkdir -p /var/vlogs
 
-if [ ! -f "${ENV_FILE}" ]; then
-  echo "" >"${ENV_FILE}"
-fi
-
+touch "${ENV_FILE}"
 chmod 400 "${ENV_FILE}"
 
 if ! grep -q "AUTH_SECRET" "${ENV_FILE}"; then
-  cat "${ENV_FILE}" &>/dev/null <<EOF
+  tee -a "${ENV_FILE}" &>/dev/null <<EOF
 AUTH_SECRET=$(openssl rand -base64 32)
 EOF
 fi
@@ -40,15 +38,19 @@ fi
 # if there was, converting it to hex and storing it to
 # the .env
 if [ -n "$UI_PASSWORD" ]; then
-  ui_password_hex=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
-  sed -e '/^HASHED_PASSWORD=/d' "${ENV_FILE}"
-  cat "${ENV_FILE}" &>/dev/null <<EOF
-HASHED_PASSWORD=$ui_password_hex
+  sed -i '/^HASHED_PASSWORD/d' "${ENV_FILE}"
+  tee -a "${ENV_FILE}" &>/dev/null <<EOF
+HASHED_PASSWORD=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
 EOF
   unset UI_PASSWORD
+else
+  echo "[error] no password set for the UI"
+  exit 1
 fi
 
-remove_duplicate_env "${ENV_FILE}"
+# Remove duplicated envs
+awk -F= '!a[$1]++' "${ENV_FILE}" >"/tmp/$(basename "${ENV_FILE}")" &&
+  mv "/tmp/$(basename "${ENV_FILE}")" "${ENV_FILE}"
 
 # IP address of the container
 inet_address="$(hostname -i | awk '{print $1}')"
@@ -90,14 +92,6 @@ screen -L -Logfile /var/vlogs/tor -dmS tor \
 # Starting Redis server in detached mode
 screen -L -Logfile /var/vlogs/redis -dmS redis \
   bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
-
-echo "                                                   "
-echo " _       ___           ___       __          _     "
-echo "| |     / (_)_______  /   | ____/ /___ ___  (_)___ "
-echo "| | /| / / / ___/ _ \/ /| |/ __  / __ \`__ \/ / __ \\"
-echo "| |/ |/ / / /  /  __/ ___ / /_/ / / / / / / / / / /"
-echo "|__/|__/_/_/   \___/_/  |_\__,_/_/ /_/ /_/_/_/ /_/ "
-echo "                                                   "
 
 sleep 1
 echo -e "\n======================== Versions ========================"

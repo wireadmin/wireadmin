@@ -76,7 +76,7 @@ jobs:
             echo "RELEASE_TAG=,docker.io/${IMAGE_NAME}:latest" >> $GITHUB_ENV
           else
             echo "Labeling image with commit SHA: ${GITHUB_SHA}"
-            echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+            echo "IMAGE_TAG=canary-${GITHUB_SHA}" >> $GITHUB_ENV
           fi
 
       - name: Push to DockerHub
