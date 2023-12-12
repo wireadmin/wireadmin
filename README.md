@@ -61,10 +61,6 @@ Please note that the port `3000` is for the WebUI, and it's up to you to remove 
 > IMPORTANT: When creating each server, ensure that you add the port exposure through Docker. (The port `51820` is added
 > as an example.)
 
-### 4. Enjoy 🎉
-
-Please feel free to open an issue if you have any questions or suggestions.
-
 ## Environment Options
 
 These options can be configured by setting environment variables using `-e KEY="VALUE"` in the `docker run` command.
@@ -77,10 +73,15 @@ These options can be configured by setting environment variables using `-e KEY="
 | `TOR_USE_BRIDGES` | Set this to `1` and then mount the bridges file at `/etc/torrc.d/bridges.conf`.                                                        | ✔️       |
 | `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)                                                          | ✔️       |
 
+## Reporting
+
+If you have any questions, bug reports, and feature requests, please create an issue
+on [GitHub](https://github.com/shahradelahi/wireadmin/issues).
+
 ## Support the Project
 
-Seriously, this project is free and open-source, and all I ask for as support is for you to give a star to the
-repository.
+Seriously, this project is free and open-source, and all I ask for as support is for you to give a star to [the
+repository](https://github.com/shahradelahi/wireadmin).
 
 ## License
 
