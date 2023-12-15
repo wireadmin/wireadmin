@@ -26,6 +26,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.PRIVATE_TOKEN }}
 
+      - name: Set Image tag
+        run: |
+          echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
+          echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
       - name: Push to GitHub Container Registry
         uses: docker/build-push-action@v5
         with:
@@ -33,7 +38,7 @@ jobs:
           file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ env.IMAGE_NAME }}:latest,ghcr.io/${{ env.IMAGE_NAME }}:${GITHUB_REF#refs/tags/v}
+          tags: ghcr.io/${{ env.IMAGE_NAME }}:latest,ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
 
   docker-build:
@@ -56,6 +61,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set Image tag
+        run: |
+          echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
+          echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
       - name: Push to DockerHub
         uses: docker/build-push-action@v5
         with:
@@ -63,4 +73,4 @@ jobs:
           file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: docker.io/${{ env.IMAGE_NAME }}:latest,docker.io/${{ env.IMAGE_NAME }}:${GITHUB_REF#refs/tags/v}
+          tags: docker.io/${{ env.IMAGE_NAME }}:latest,docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
