@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Select from '$lib/components/ui/select';
+  import * as Select from '$lib/components/ui/select';
   import { getFormField } from 'formsnap';
   import type { Select as SelectPrimitive } from 'bits-ui';
 
@@ -10,11 +10,11 @@
 
 <Select.Root
   onSelectedChange={(v) => {
-		onSelectedChange?.(v);
-		setValue(v ? v.value : undefined);
-	}}
+    onSelectedChange?.(v);
+    setValue(v ? v.value : undefined);
+  }}
   {...$$restProps}
 >
-	<slot />
-	<input hidden {name} value={$value} />
+  <slot />
+  <input hidden {name} value={$value} />
 </Select.Root>

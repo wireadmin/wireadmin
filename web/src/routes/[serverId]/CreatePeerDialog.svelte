@@ -9,7 +9,14 @@
     DialogTitle,
     DialogTrigger,
   } from '$lib/components/ui/dialog';
-  import { Form, FormButton, FormField, FormInput, FormLabel, FormValidation } from '$lib/components/ui/form';
+  import {
+    Form,
+    FormButton,
+    FormField,
+    FormInput,
+    FormLabel,
+    FormValidation,
+  } from '$lib/components/ui/form';
   import { FormItem } from '$lib/components/ui/form/index.js';
   import { cn } from '$lib/utils';
   import { invalidateAll } from '$app/navigation';
@@ -70,7 +77,8 @@
 
       <DialogFooter>
         <FormButton>
-          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}></i>
+          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}
+          ></i>
           Create
         </FormButton>
       </DialogFooter>

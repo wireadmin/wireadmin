@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Select as SelectPrimitive } from 'bits-ui';
+  import { Select as SelectPrimitive } from 'bits-ui';
 
   type $$Props = SelectPrimitive.Props;
 
@@ -8,5 +8,5 @@
 </script>
 
 <SelectPrimitive.Root bind:selected bind:open {...$$restProps}>
-	<slot />
+  <slot />
 </SelectPrimitive.Root>

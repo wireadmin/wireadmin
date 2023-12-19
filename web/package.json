@@ -9,8 +9,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "mocha",
-    "lint": "prettier --plugin-search-dir . --check .",
-    "format": "prettier --plugin-search-dir . --write .",
+    "lint": "prettier --check .",
+    "format": "prettier --write .",
     "start": "node ./build/index.js"
   },
   "devDependencies": {

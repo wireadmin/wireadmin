@@ -35,7 +35,10 @@ export default class Network {
 
   public static async getInUsePorts(): Promise<number[]> {
     const ports = [];
-    const output = await Shell.exec(`netstat -tulpn | grep LISTEN | awk '{print $4}' | awk -F ':' '{print $NF}'`, true);
+    const output = await Shell.exec(
+      `netstat -tulpn | grep LISTEN | awk '{print $4}' | awk -F ':' '{print $NF}'`,
+      true,
+    );
     for (const line of output.split('\n')) {
       const clean = Number(line.trim());
       if (!isNaN(clean)) ports.push(clean);

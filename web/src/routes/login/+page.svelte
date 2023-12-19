@@ -2,7 +2,15 @@
   import { formSchema, type FormSchema } from './schema';
   import type { SuperValidated } from 'sveltekit-superforms';
   import { Card, CardContent } from '$lib/components/ui/card';
-  import { Form, FormButton, FormField, FormInput, FormItem, FormLabel, FormValidation } from '$lib/components/ui/form';
+  import {
+    Form,
+    FormButton,
+    FormField,
+    FormInput,
+    FormItem,
+    FormLabel,
+    FormValidation,
+  } from '$lib/components/ui/form';
   import { goto } from '$app/navigation';
   import type { FormOptions } from 'formsnap';
 

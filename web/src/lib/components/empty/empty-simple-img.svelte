@@ -21,7 +21,7 @@
   viewBox="0 0 64 41"
   xmlns="http://www.w3.org/2000/svg"
   {...$$restProps}
-  class={cn('max-w-full h-full m-auto',className)}
+  class={cn('max-w-full h-full m-auto', className)}
 >
   <g transform="translate(0 1)" fill="none" fill-rule="evenodd">
     <ellipse fill={shadowColor} cx="32" cy="33" rx="32" ry="7" />

@@ -79,7 +79,6 @@
 }
 
 @layer base {
-
   h1 {
     @apply text-4xl font-bold;
   }
@@ -108,5 +107,4 @@
     text-decoration: none;
     transition: color 0.2s ease-in-out;
   }
-
 }

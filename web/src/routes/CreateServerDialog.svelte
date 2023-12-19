@@ -22,7 +22,11 @@
   import { goto } from '$app/navigation';
   import { FormItem } from '$lib/components/ui/form/index.js';
   import { cn } from '$lib/utils';
-  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '$lib/components/ui/collapsible';
+  import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+  } from '$lib/components/ui/collapsible';
   import { Button } from '$lib/components/ui/button';
 
   let loading: boolean = false;
@@ -84,7 +88,9 @@
         <FormItem>
           <FormLabel>Port</FormLabel>
           <FormInput placeholder={'e.g. 51820'} type={'text'} />
-          <FormDescription>This is the port that the WireGuard server will listen on.</FormDescription>
+          <FormDescription
+            >This is the port that the WireGuard server will listen on.</FormDescription
+          >
           <FormValidation />
         </FormItem>
       </FormField>
@@ -112,7 +118,9 @@
             <FormItem>
               <FormLabel>DNS</FormLabel>
               <FormInput placeholder={'e.g. 1.1.1.1'} type={'text'} />
-              <FormDescription>Optional. This is the DNS server that will be pushed to clients.</FormDescription>
+              <FormDescription
+                >Optional. This is the DNS server that will be pushed to clients.</FormDescription
+              >
               <FormValidation />
             </FormItem>
           </FormField>
@@ -130,7 +138,8 @@
 
       <DialogFooter>
         <FormButton>
-          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}></i>
+          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}
+          ></i>
           Create
         </FormButton>
       </DialogFooter>

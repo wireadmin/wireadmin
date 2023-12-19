@@ -35,7 +35,7 @@
       return;
     }
     // create a blob
-    const blob = new Blob([ conf ], { type: 'text/plain' });
+    const blob = new Blob([conf], { type: 'text/plain' });
     // create a link
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
@@ -55,9 +55,13 @@
   };
 </script>
 
-<div class="flex items-center justify-between p-4 border border-neutral-200/60 rounded-md hover:border-neutral-200">
+<div
+  class="flex items-center justify-between p-4 border border-neutral-200/60 rounded-md hover:border-neutral-200"
+>
   <div class="flex items-center gap-x-2">
-    <div class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}>
+    <div
+      class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}
+    >
       <i class={'fas fa-user text-gray-400 text-lg'} />
     </div>
 

@@ -1,6 +1,13 @@
 import { type Actions, error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { findServer, generateWgServer, getServers, isIPReserved, isPortReserved, WGServer } from '$lib/wireguard';
+import {
+  findServer,
+  generateWgServer,
+  getServers,
+  isIPReserved,
+  isPortReserved,
+  WGServer,
+} from '$lib/wireguard';
 import { setError, superValidate } from 'sveltekit-superforms/server';
 import { CreateServerSchema } from './schema';
 import { NameSchema } from '$lib/wireguard/schema';

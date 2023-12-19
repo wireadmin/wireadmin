@@ -8,7 +8,8 @@ export const badgeVariants = tv({
       default: 'bg-primary hover:bg-primary/80 border-transparent text-primary-foreground',
       secondary: 'bg-secondary hover:bg-secondary/80 border-transparent text-secondary-foreground',
       success: 'bg-green-500 hover:bg-green-500/80 border-transparent text-white',
-      destructive: 'bg-destructive hover:bg-destructive/80 border-transparent text-destructive-foreground',
+      destructive:
+        'bg-destructive hover:bg-destructive/80 border-transparent text-destructive-foreground',
       outline: 'text-foreground',
     },
   },

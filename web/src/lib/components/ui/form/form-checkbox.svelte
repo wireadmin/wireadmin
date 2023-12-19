@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getFormField } from 'formsnap';
+  import { getFormField } from 'formsnap';
   import type { Checkbox as CheckboxPrimitive } from 'bits-ui';
   import { Checkbox } from '$lib/components/ui/checkbox';
 
@@ -15,11 +15,11 @@
 
 <Checkbox
   {...rest}
-  checked={typeof $value === "boolean" ? $value : false}
+  checked={typeof $value === 'boolean' ? $value : false}
   onCheckedChange={(v) => {
-		onCheckedChange?.(v);
-		setValue(v);
-	}}
+    onCheckedChange?.(v);
+    setValue(v);
+  }}
   {...$$restProps}
   on:click
   on:keydown

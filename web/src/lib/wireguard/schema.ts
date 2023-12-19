@@ -32,9 +32,7 @@ export const PortSchema = z
     },
   );
 
-export const TorSchema = z
-  .boolean()
-  .default(false);
+export const TorSchema = z.boolean().default(false);
 
 export const DnsSchema = z
   .string()

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getFormField } from 'formsnap';
+  import { getFormField } from 'formsnap';
   import type { Switch as SwitchPrimitive } from 'bits-ui';
   import { Switch } from '$lib/components/ui/switch';
 
@@ -13,11 +13,11 @@
 
 <Switch
   {...$attrStore}
-  checked={typeof $value === "boolean" ? $value : false}
+  checked={typeof $value === 'boolean' ? $value : false}
   onCheckedChange={(v) => {
-		onCheckedChange?.(v);
-		setValue(v);
-	}}
+    onCheckedChange?.(v);
+    setValue(v);
+  }}
   {...$$restProps}
   on:click
   on:keydown

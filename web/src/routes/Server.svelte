@@ -17,9 +17,14 @@
 <div class="flex items-center justify-between p-4 gap-x-4">
   <div class="w-full md:w-2/3 flex items-center gap-x-2">
     <div class="flex grow">
-      <div class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}>
+      <div
+        class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}
+      >
         <i
-          class={cn(server.tor ? 'fa-solid fa-onion text-purple-700' : 'fa-solid fa-server text-gray-400', 'text-xl')}
+          class={cn(
+            server.tor ? 'fa-solid fa-onion text-purple-700' : 'fa-solid fa-server text-gray-400',
+            'text-xl',
+          )}
         />
       </div>
 
@@ -36,7 +41,9 @@
           asChild
         >
           <a href={`/${server.id}`} title="Manage the Server" class={cn({ hidden: editMode })}>
-            <span class="text-lg md:text-base hover:text-primary hover:font-medium"> {server.name} </span>
+            <span class="text-lg md:text-base hover:text-primary hover:font-medium">
+              {server.name}
+            </span>
           </a>
         </EditableText>
         <CopiableText value={addressPort} class="text-sm" showInHover={true}>

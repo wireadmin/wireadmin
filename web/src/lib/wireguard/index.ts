@@ -531,7 +531,10 @@ export async function isIPReserved(ip: string): Promise<boolean> {
 }
 
 export async function isPortReserved(port: number): Promise<boolean> {
-  const inUsePorts = [await Network.getInUsePorts(), (await getServers()).map((s) => Number(s.listen))].flat();
+  const inUsePorts = [
+    await Network.getInUsePorts(),
+    (await getServers()).map((s) => Number(s.listen)),
+  ].flat();
   return inUsePorts.includes(port);
 }
 
@@ -594,7 +597,10 @@ export async function findServerIndex(id: string): Promise<number | undefined> {
   return undefined;
 }
 
-export async function findServer(id: string | undefined, hash?: string): Promise<WgServer | undefined> {
+export async function findServer(
+  id: string | undefined,
+  hash?: string,
+): Promise<WgServer | undefined> {
   const servers = await getServers();
   return id
     ? servers.find((s) => s.id === id)
@@ -660,7 +666,9 @@ export async function genServerConf(server: WgServer): Promise<string> {
     lines.push(`PublicKey = ${peer.publicKey}`);
     lines.push(`${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}` : 'OMIT'}`);
     lines.push(`AllowedIPs = ${peer.allowedIps}/32`);
-    lines.push(`${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : 'OMIT'}`);
+    lines.push(
+      `${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : 'OMIT'}`,
+    );
   });
 
   return lines.filter((l) => l !== 'OMIT').join('\n');

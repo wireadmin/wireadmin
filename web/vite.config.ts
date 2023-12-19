@@ -1,8 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 
 export default {
-  plugins: [ sveltekit() ],
+  plugins: [sveltekit()],
   test: {
-    include: [ 'src/**/*.{test,spec}.{js,ts}' ]
-  }
+    include: ['src/**/*.{test,spec}.{js,ts}'],
+  },
 };

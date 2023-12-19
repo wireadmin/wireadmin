@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Select as SelectPrimitive } from 'bits-ui';
+  import { Select as SelectPrimitive } from 'bits-ui';
   import { cn, flyAndScale } from '$lib/utils';
   import { scale } from 'svelte/transition';
 
@@ -24,13 +24,13 @@
   {outTransition}
   {outTransitionConfig}
   class={cn(
-		"relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md outline-none",
-		className
-	)}
+    'relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md outline-none',
+    className,
+  )}
   {...$$restProps}
   on:keydown
 >
-	<div class="w-full p-1">
-		<slot />
-	</div>
+  <div class="w-full p-1">
+    <slot />
+  </div>
 </SelectPrimitive.Content>

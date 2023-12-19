@@ -13,7 +13,11 @@
     </div>
 
     <div class={'flex items-center gap-x-8'}>
-      <a href={'https://github.com/shahradelahi/wireadmin'} title={'Giv me a star on Github'} class="hidden md:block">
+      <a
+        href={'https://github.com/shahradelahi/wireadmin'}
+        title={'Giv me a star on Github'}
+        class="hidden md:block"
+      >
         <img
           src={'https://img.shields.io/github/stars/shahradelahi/wireadmin.svg?style=social&label=Star'}
           alt={'Giv me a star on Github'}
@@ -21,8 +25,15 @@
       </a>
 
       {#if showLogout}
-        <a href="/logout" rel="external" title="Logout" class="group text-sm/2 font-medium text-neutral-700 hover:text-neutral-800">
-          <i class="far fa-arrow-right-from-arc text-sm text-neutral-500 group-hover:text-neutral-800 mr-0.5"></i>
+        <a
+          href="/logout"
+          rel="external"
+          title="Logout"
+          class="group text-sm/2 font-medium text-neutral-700 hover:text-neutral-800"
+        >
+          <i
+            class="far fa-arrow-right-from-arc text-sm text-neutral-500 group-hover:text-neutral-800 mr-0.5"
+          ></i>
           Logout
         </a>
       {/if}

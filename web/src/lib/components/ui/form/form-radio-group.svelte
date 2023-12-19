@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getFormField } from 'formsnap';
+  import { getFormField } from 'formsnap';
   import type { RadioGroup as RadioGroupPrimitive } from 'bits-ui';
   import * as RadioGroup from '$lib/components/ui/radio-group';
 
@@ -12,11 +12,11 @@
 <RadioGroup.Root
   {...$attrStore}
   onValueChange={(v) => {
-		onValueChange?.(v);
-		setValue(v);
-	}}
+    onValueChange?.(v);
+    setValue(v);
+  }}
   {...$$restProps}
 >
-	<slot />
-	<input hidden {name} value={$value} />
+  <slot />
+  <input hidden {name} value={$value} />
 </RadioGroup.Root>

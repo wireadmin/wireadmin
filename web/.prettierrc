@@ -4,20 +4,14 @@
   "singleQuote": true,
   "jsxSingleQuote": true,
   "trailingComma": "all",
-  "printWidth": 120,
-  "jsxBracketSameLine": true,
+  "printWidth": 100,
   "overrides": [
     {
       "files": "*.svelte",
       "options": {
         "parser": "svelte",
-        "plugins": [
-          "prettier-plugin-svelte"
-        ]
+        "plugins": ["prettier-plugin-svelte"]
       }
     }
-  ],
-  "pluginSearchDirs": [
-    "."
   ]
 }

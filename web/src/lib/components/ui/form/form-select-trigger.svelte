@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Select from '$lib/components/ui/select';
+  import * as Select from '$lib/components/ui/select';
   import type { Select as SelectPrimitive } from 'bits-ui';
   import { getFormField } from 'formsnap';
 
@@ -12,6 +12,6 @@
 </script>
 
 <Select.Trigger {...$$restProps} {...$attrStore} on:click on:keydown>
-	<Select.Value {placeholder} />
-	<slot />
+  <Select.Value {placeholder} />
+  <slot />
 </Select.Trigger>
