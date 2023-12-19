@@ -5,6 +5,7 @@ import { setError, superValidate } from 'sveltekit-superforms/server';
 import { formSchema } from './schema';
 import { generateToken } from '$lib/auth';
 import 'dotenv/config';
+import logger from '$lib/logger';
 
 export const load: PageServerLoad = () => {
   return {
@@ -14,6 +15,7 @@ export const load: PageServerLoad = () => {
 
 export const actions: Actions = {
   default: async (event) => {
+    const { cookies } = event;
     const form = await superValidate(event, formSchema);
 
     if (!form.valid) {
@@ -33,22 +35,19 @@ export const actions: Actions = {
     }
 
     if (!HASHED_PASSWORD) {
-      console.warn('No password is set!');
+      logger.warn('No password is set!');
     }
 
     const token = await generateToken();
 
     const { ORIGIN } = process.env;
-    if (ORIGIN) {
-      const secure = ORIGIN.startsWith('https://');
-      event.cookies.set('authorization', token, {
-        secure,
-        httpOnly: true,
-        path: '/',
-      });
-    } else {
-      event.cookies.set('authorization', token);
-    }
+
+    const secure = ORIGIN?.startsWith('https://') ?? false;
+    cookies.set('authorization', token, {
+      secure,
+      httpOnly: true,
+      path: '/',
+    });
 
     return { form, ok: true };
   },

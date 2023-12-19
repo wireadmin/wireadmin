@@ -1,5 +1,6 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { getConfigHash, getServers, WGServer } from '$lib/wireguard';
+import logger from '$lib/logger';
 
 export const GET: RequestHandler = async () => {
   try {
@@ -18,7 +19,7 @@ export const GET: RequestHandler = async () => {
       }
     }
   } catch (e) {
-    console.error('APIFailed: HealthCheck:', e);
+    logger.error('APIFailed: HealthCheck:', e);
     return new Response('FAILED', { status: 500, headers: { 'Content-Type': 'text/plain' } });
   }
 

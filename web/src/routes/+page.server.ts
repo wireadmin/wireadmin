@@ -1,16 +1,10 @@
 import { type Actions, error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import {
-  findServer,
-  generateWgServer,
-  getServers,
-  isIPReserved,
-  isPortReserved,
-  WGServer,
-} from '$lib/wireguard';
+import { findServer, generateWgServer, getServers, isIPReserved, isPortReserved, WGServer } from '$lib/wireguard';
 import { setError, superValidate } from 'sveltekit-superforms/server';
 import { CreateServerSchema } from './schema';
 import { NameSchema } from '$lib/wireguard/schema';
+import logger from '$lib/logger';
 
 export const load: PageServerLoad = async () => {
   return {
@@ -27,12 +21,12 @@ export const actions: Actions = {
 
     const server = await findServer(serverId ?? '');
     if (!server) {
-      console.error('Server not found');
+      logger.error('Server not found');
       return error(404, 'Not found');
     }
 
     if (!NameSchema.safeParse(name).success) {
-      console.error('Peer name is invalid');
+      logger.error('Peer name is invalid');
       return error(400, 'Bad Request');
     }
 
@@ -71,7 +65,7 @@ export const actions: Actions = {
         serverId,
       };
     } catch (e: any) {
-      console.error('Exception:', e);
+      logger.error('Exception:', e);
       return setError(form, 'Unhandled Exception');
     }
   },

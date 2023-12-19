@@ -8,7 +8,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   const body = await request.text();
   const data = await QRCode.toDataURL(body, {
-    errorCorrectionLevel: 'H',
+    errorCorrectionLevel: 'M',
     width: 500,
   });
 

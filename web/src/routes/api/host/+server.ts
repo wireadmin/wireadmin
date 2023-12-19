@@ -1,10 +1,10 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import Shell from '$lib/shell';
 import 'dotenv/config';
+import logger from '$lib/logger';
 
 export const GET: RequestHandler = async () => {
-
-  let { WG_HOST } = process.env
+  let { WG_HOST } = process.env;
 
   // if the host is not set, then we are using the server's public IP
   if (!WG_HOST) {
@@ -14,7 +14,7 @@ export const GET: RequestHandler = async () => {
 
   // check if WG_HOST is still not set
   if (!WG_HOST) {
-    console.error('WG_HOST is not set');
+    logger.error('WG_HOST is not set');
     return new Response('NOT_SET', { status: 500, headers: { 'Content-Type': 'text/plain' } });
   }
 

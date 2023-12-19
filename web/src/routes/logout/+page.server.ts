@@ -7,6 +7,8 @@ export const load: PageServerLoad = async ({ cookies }) => {
     const token = cookies.get('authorization')!;
     await revokeToken(token).catch(() => {});
   }
-  cookies.delete('authorization');
+  cookies.delete('authorization', {
+    path: '/',
+  });
   throw redirect(302, '/login');
 };

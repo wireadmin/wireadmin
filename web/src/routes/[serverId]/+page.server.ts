@@ -4,7 +4,7 @@ import { findServer, generateWgKey, WGServer } from '$lib/wireguard';
 import { NameSchema } from '$lib/wireguard/schema';
 import { setError, superValidate } from 'sveltekit-superforms/server';
 import { CreatePeerSchema } from './schema';
-import { WgServerStatusSchema } from '$lib/typings';
+import logger from '$lib/logger';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { serverId } = params;
@@ -22,7 +22,7 @@ export const actions: Actions = {
     const { serverId } = params;
     const server = await findServer(serverId ?? '');
     if (!server) {
-      console.error('Server not found');
+      logger.error('Server not found');
       throw error(404, 'Not found');
     }
 
@@ -30,13 +30,13 @@ export const actions: Actions = {
     const peerId = (form.get('id') ?? '').toString();
     const peer = server.peers.find((p) => p.id === peerId);
     if (!peer) {
-      console.error('Peer not found');
+      logger.error('Peer not found');
       throw error(404, 'Not found');
     }
 
     const name = (form.get('name') ?? '').toString();
     if (!NameSchema.safeParse(name).success) {
-      console.error('Peer name is invalid');
+      logger.error('Peer name is invalid');
       throw error(400, 'Bad Request');
     }
 
@@ -45,7 +45,7 @@ export const actions: Actions = {
 
       return { ok: true };
     } catch (e) {
-      console.error('Exception:', e);
+      logger.error('Exception:', e);
       throw error(500, 'Unhandled Exception');
     }
   },

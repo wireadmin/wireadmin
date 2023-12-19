@@ -15,7 +15,7 @@ RUN apk update && apk upgrade \
   # Install required packages
   && apk add -U --no-cache \
   iproute2 iptables net-tools \
-  screen vim curl bash \
+  screen curl bash \
   wireguard-tools \
   openssl \
   tor \
@@ -63,8 +63,9 @@ HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
 
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
+RUN mkdir -p /var/vlogs && chmod -R 600 /var/vlogs && touch /var/vlogs/web.log
 
-VOLUME ["/etc/torrc.d", "/data"]
+VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
 # run the app
 EXPOSE 3000/tcp

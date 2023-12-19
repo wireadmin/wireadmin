@@ -47,8 +47,9 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
+RUN mkdir -p /var/vlogs && chmod -R 600 /var/vlogs && touch /var/vlogs/web.log
 
-VOLUME ["/etc/torrc.d", "/data"]
+VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
 # run the appc
 EXPOSE 5173/tcp
