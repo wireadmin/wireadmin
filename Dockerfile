@@ -26,37 +26,36 @@ COPY /config/torrc /etc/tor/torrc
 COPY /scripts /scripts
 RUN chmod -R +x /scripts
 
-COPY /bin /usr/local/bin
-RUN chmod -R +x /usr/local/bin
+COPY /bin /app/bin
+RUN chmod -R +x /app/bin
+ENV PATH="$PATH:/app/bin"
 
+COPY web/package.json web/pnpm-lock.yaml ./
 
-FROM base AS deps
+FROM base AS build
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-COPY web/package.json web/pnpm-lock.yaml /temp/dev/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/dev/
-
-COPY web/package.json web/pnpm-lock.yaml /temp/prod/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prod -C /temp/prod/
-
-
-FROM base AS build
-COPY --from=deps /temp/dev/node_modules node_modules
 COPY web .
 
-# build
-ENV NODE_ENV=production
-RUN npm run build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile \
+    # build
+    && NODE_ENV=production pnpm run build \
+    # Omit devDependencies
+    && pnpm prune --prod \
+    # Move the goods to a temporary location
+    && mv node_modules /tmp/node_modules \
+    && mv build /tmp/build \
+    # Remove everything else
+    && rm -rf ./*
 
 
 FROM base AS release
 
-COPY --from=deps /temp/prod/node_modules node_modules
-COPY --from=build /app/build build
-COPY --from=build /app/package.json .
+COPY --from=build /tmp/node_modules node_modules
+COPY --from=build /tmp/build build
 
 ENV NODE_ENV=production
 ENV LOG_LEVEL=error

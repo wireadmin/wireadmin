@@ -27,25 +27,16 @@ COPY /config/obfs4-bridges.conf /etc/torrc.d/obfs4-bridges.conf
 COPY /scripts /scripts
 RUN chmod -R +x /scripts
 
-COPY /bin /usr/local/bin
-RUN chmod -R +x /usr/local/bin
-
-
-FROM base AS deps
-
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
-RUN mkdir -p /temp/dev/
-
-COPY web/package.json web/pnpm-lock.yaml /temp/dev/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile -C /temp/dev/
+COPY /bin /app/bin
+RUN chmod -R +x /app/bin
+ENV PATH="$PATH:/app/bin"
 
 
 FROM base AS runner
 
-COPY --from=deps /temp/dev/node_modules node_modules
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
