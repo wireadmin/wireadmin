@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -e
+
+LOG_DIR="/var/vlogs"
+LOG_FILE="${LOG_DIR}/${1}"
+
+if [ ! -f "${LOG_FILE}" ]; then
+  echo "Usage: ${0} <filename>"
+  exit 1
+fi
+
+cat "${LOG_FILE}"
