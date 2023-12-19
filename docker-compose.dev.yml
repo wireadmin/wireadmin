@@ -9,6 +9,6 @@ services:
     environment:
       - UI_PASSWORD=password
       - WG_HOST=192.168.1.102
-      - TOR_SOCKS5_PROXY=host.docker.internal:1080
+      - TOR_SOCKS5_PROXY=host.docker.internal:8080
     extra_hosts:
       - "host.docker.internal:host-gateway"

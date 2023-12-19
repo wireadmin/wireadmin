@@ -8,8 +8,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
-COPY /config/torrc /etc/tor/torrc
-
 # Update and upgrade packages
 RUN apk update && apk upgrade \
   # Install required packages
@@ -22,6 +20,14 @@ RUN apk update && apk upgrade \
   redis \
   # Clear APK cache
   && rm -rf /var/cache/apk/*
+
+COPY /config/torrc /etc/tor/torrc
+
+COPY /scripts /scripts
+RUN chmod -R +x /scripts
+
+COPY /bin /usr/local/bin
+RUN chmod -R +x /usr/local/bin
 
 
 FROM base AS deps
@@ -53,6 +59,7 @@ COPY --from=build /app/build build
 COPY --from=build /app/package.json .
 
 ENV NODE_ENV=production
+ENV LOG_LEVEL=error
 
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -63,7 +70,7 @@ HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
 
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
-RUN mkdir -p /var/vlogs && chmod -R 600 /var/vlogs && touch /var/vlogs/web.log
+RUN mkdir -p /var/vlogs && chmod -R 600 /var/vlogs && touch /var/vlogs/web
 
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 

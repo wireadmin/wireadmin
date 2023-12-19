@@ -4,46 +4,6 @@ set -e
 TOR_CONFIG="/etc/tor/torrc"
 ENV_FILE="/app/.env"
 
-to_camel_case() {
-  echo "${1}" | awk -F_ '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1' OFS=""
-}
-
-generate_tor_config() {
-  # IP address of the container
-  local inet_address="$(hostname -i | awk '{print $1}')"
-
-  sed -i "s/{{INET_ADDRESS}}/$inet_address/g" "${TOR_CONFIG}"
-
-  # any other environment variables that start with TOR_ are added to the torrc
-  # file
-  env | grep ^TOR_ | sed -e 's/TOR_//' -e 's/=/ /' | while read -r line; do
-    key=$(echo "$line" | awk '{print $1}')
-    value=$(echo "$line" | awk '{print $2}')
-    key=$(to_camel_case "$key")
-    echo "$key $value" >>"${TOR_CONFIG}"
-  done
-
-  # Removing duplicated tor options
-  awk -F= '!a[tolower($1)]++' "${TOR_CONFIG}" >"/tmp/$(basename "${TOR_CONFIG}")" &&
-    mv "/tmp/$(basename "${TOR_CONFIG}")" "${TOR_CONFIG}"
-
-  # Checking if there is /etc/torrc.d folder and if there is
-  # any file in it, adding them to the torrc file
-  local TORRC_DIR_FILES=$(find /etc/torrc.d -type f -name "*.conf")
-  if [ -n "$TORRC_DIR_FILES" ]; then
-    for file in $TORRC_DIR_FILES; do
-      cat "$file" >>"${TOR_CONFIG}"
-    done
-  fi
-
-  # Remove comment line with single Hash
-  sed -i '/^#\([^#]\)/d' "${TOR_CONFIG}"
-  # Remove options with no value. (KEY[:space:]{...VALUE})
-  sed -i '/^[^ ]* $/d' "${TOR_CONFIG}"
-  # Remove double empty lines
-  sed -i '/^$/N;/^\n$/D' "${TOR_CONFIG}"
-}
-
 echo "                                                   "
 echo " _       ___           ___       __          _     "
 echo "| |     / (_)_______  /   | ____/ /___ ___  (_)___ "
@@ -69,7 +29,7 @@ fi
 if [ -n "$UI_PASSWORD" ]; then
   sed -i '/^HASHED_PASSWORD/d' "${ENV_FILE}"
   tee -a "${ENV_FILE}" &>/dev/null <<EOF
-HASHED_PASSWORD=$(echo -n "$UI_PASSWORD" | xxd -ps -u)
+HASHED_PASSWORD=$(printf "%s" "${UI_PASSWORD}" | od -A n -t x1 | tr -d ' \n')
 EOF
   unset UI_PASSWORD
 else
@@ -81,15 +41,18 @@ fi
 awk -F= '!a[$1]++' "${ENV_FILE}" >"/tmp/$(basename "${ENV_FILE}")" &&
   mv "/tmp/$(basename "${ENV_FILE}")" "${ENV_FILE}"
 
+# Starting Redis server in detached mode
+screen -L -Logfile /var/vlogs/redis -dmS "redis" \
+  bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
+
+# Starting Tor
+source /scripts/tord.sh
+
+# Generate Tor configuration
 generate_tor_config
 
 # Start Tor on the background
-screen -L -Logfile /var/vlogs/tor -dmS tor \
-  bash -c "tor -f ${TOR_CONFIG}"
-
-# Starting Redis server in detached mode
-screen -L -Logfile /var/vlogs/redis -dmS redis \
-  bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
+screen -L -Logfile /var/vlogs/tor -dmS "tor" tor -f "${TOR_CONFIG}"
 
 sleep 1
 echo -e "\n======================== Versions ========================"
