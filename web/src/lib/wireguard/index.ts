@@ -4,13 +4,13 @@ import deepmerge from 'deepmerge';
 import type { Peer, WgKey, WgServer } from '$lib/typings';
 import Network from '$lib/network';
 import Shell from '$lib/shell';
-import { WG_PATH } from '$lib/constants';
-import { client, WG_SEVER_PATH } from '$lib/redis';
+import { WG_PATH, WG_SEVER_PATH } from '$lib/constants';
 import { dynaJoin, isJson } from '$lib/utils';
 import { getPeerConf } from '$lib/wireguard/utils';
 import logger from '$lib/logger';
 import { sha256 } from '$lib/hash';
 import { fsAccess } from '$lib/fs-extra';
+import { getClient } from '$lib/redis';
 
 export class WGServer {
   readonly id: string;
@@ -90,6 +90,7 @@ export class WGServer {
       return true;
     }
 
+    const client = getClient();
     const element = await client.lindex(WG_SEVER_PATH, index);
     if (!element) {
       logger.warn('remove: element not found');
@@ -110,6 +111,7 @@ export class WGServer {
       return true;
     }
 
+    const client = getClient();
     const res = await client.lset(
       WG_SEVER_PATH,
       index,
@@ -184,6 +186,7 @@ class WGPeers {
       return true;
     }
 
+    const client = getClient();
     await client.lset(
       WG_SEVER_PATH,
       index,
@@ -210,6 +213,8 @@ class WGPeers {
       logger.warn('findServerIndex: index not found');
       return true;
     }
+
+    const client = getClient();
     await client.lset(
       WG_SEVER_PATH,
       index,
@@ -254,6 +259,7 @@ class WGPeers {
       return deepmerge(p, update);
     });
 
+    const client = getClient();
     await client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }));
     await this.storePeers(publicKey, updatedPeers);
 
@@ -428,10 +434,13 @@ async function syncServers(): Promise<boolean> {
   const confs = files.filter((f) => reg.test(f));
   // read all confs
   const servers = await Promise.all(confs.map((f) => readWgConf(parseInt(f.match(reg)![1]))));
+
+  const client = getClient();
   // remove old servers
   await client.del(WG_SEVER_PATH);
   // save all servers to redis
   await client.lpush(WG_SEVER_PATH, ...servers.map((s) => JSON.stringify(s)));
+
   return true;
 }
 
@@ -503,6 +512,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
 
   // save server config
   if (false !== config.insertDb) {
+    const client = getClient();
     await client.lpush(WG_SEVER_PATH, JSON.stringify(server));
   }
 
@@ -582,7 +592,9 @@ export function maxConfId(): number {
 }
 
 export async function getServers(): Promise<WgServer[]> {
-  return (await client.lrange(WG_SEVER_PATH, 0, -1)).map((s) => JSON.parse(s));
+  const client = getClient();
+  const rawServers = await client.lrange(WG_SEVER_PATH, 0, -1);
+  return rawServers.map((s) => JSON.parse(s));
 }
 
 export async function findServerIndex(id: string): Promise<number | undefined> {
