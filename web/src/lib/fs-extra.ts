@@ -1,8 +1,8 @@
-import { promises } from 'fs';
+import { accessSync, promises } from 'fs';
 
-export async function fsAccess(path: string): Promise<boolean> {
+export function fsAccess(path: string): boolean {
   try {
-    await promises.access(path);
+    accessSync(path);
     return true;
   } catch (error) {
     return false;

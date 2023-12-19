@@ -4,8 +4,8 @@ import type { PageServerLoad } from './$types';
 import { setError, superValidate } from 'sveltekit-superforms/server';
 import { formSchema } from './schema';
 import { generateToken } from '$lib/auth';
-import 'dotenv/config';
 import logger from '$lib/logger';
+import dotenv from 'dotenv';
 
 export const load: PageServerLoad = () => {
   return {
@@ -22,8 +22,10 @@ export const actions: Actions = {
       return fail(400, { ok: false, message: 'Bad Request', form });
     }
 
+    dotenv.config();
+
     const { HASHED_PASSWORD } = process.env;
-    if (HASHED_PASSWORD) {
+    if (HASHED_PASSWORD && HASHED_PASSWORD !== '') {
       const { password } = form.data;
 
       const hashed = HASHED_PASSWORD.toLowerCase();
@@ -34,7 +36,7 @@ export const actions: Actions = {
       }
     }
 
-    if (!HASHED_PASSWORD) {
+    if (!HASHED_PASSWORD || HASHED_PASSWORD === '') {
       logger.warn('No password is set!');
     }
 

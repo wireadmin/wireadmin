@@ -7,15 +7,11 @@ export const GET: RequestHandler = async () => {
     const servers = await getServers();
 
     for (const s of servers) {
-      const HASH = getConfigHash(s.confId);
-      if (s.confId && HASH && s.confHash === HASH) {
-        // Skip, due to no changes on the config
-        continue;
-      }
+      const wg = new WGServer(s.id);
 
       // Start server
       if (s.status === 'up') {
-        await WGServer.start(s.id);
+        await wg.start();
       }
     }
   } catch (e) {

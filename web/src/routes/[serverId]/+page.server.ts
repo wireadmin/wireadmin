@@ -41,7 +41,8 @@ export const actions: Actions = {
     }
 
     try {
-      await WGServer.updatePeer(server.id, peer.publicKey, { name });
+      const wg = new WGServer(server.id);
+      await wg.peers.update(peer.publicKey, { name });
 
       return { ok: true };
     } catch (e) {
@@ -63,7 +64,8 @@ export const actions: Actions = {
       const peerId = (form.get('id') ?? '').toString();
       const peer = server.peers.find((p) => p.id === peerId);
       if (peer) {
-        await WGServer.removePeer(server.id, peer.publicKey);
+        const wg = new WGServer(server.id);
+        await wg.peers.remove(peer.publicKey);
       }
 
       return { ok: true };
@@ -78,7 +80,8 @@ export const actions: Actions = {
     try {
       const server = await findServer(serverId ?? '');
       if (server) {
-        await WGServer.remove(server.id);
+        const wg = new WGServer(server.id);
+        await wg.remove();
       }
 
       return { ok: true };
@@ -99,24 +102,26 @@ export const actions: Actions = {
     const form = await request.formData();
     const status = (form.get('state') ?? '').toString();
 
+    const wg = new WGServer(server.id);
+
     try {
       if (server.status !== status) {
         switch (status) {
           case 'start':
-            await WGServer.start(server.id);
+            await wg.start();
             break;
 
           case 'stop':
-            await WGServer.stop(server.id);
+            await wg.stop();
             break;
 
           case 'remove':
-            await WGServer.remove(server.id);
+            await wg.remove();
             break;
 
           case 'restart':
-            await WGServer.stop(server.id);
-            await WGServer.start(server.id);
+            await wg.stop();
+            await wg.start();
             break;
         }
       }
@@ -151,7 +156,8 @@ export const actions: Actions = {
 
       const peerKeys = await generateWgKey();
 
-      const addedPeer = await WGServer.addPeer(server.id, {
+      const wg = new WGServer(server.id);
+      const addedPeer = await wg.peers.add({
         id: crypto.randomUUID(),
         name,
         allowedIps: freeAddress,

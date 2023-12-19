@@ -30,7 +30,8 @@ export const actions: Actions = {
       return error(400, 'Bad Request');
     }
 
-    await WGServer.update(server.id, { name });
+    const wg = new WGServer(server.id);
+    await wg.update({ name });
 
     return { ok: true };
   },

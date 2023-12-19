@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import deepmerge from 'deepmerge';
-import SHA256 from 'crypto-js/sha256';
-import Hex from 'crypto-js/enc-hex';
 import type { Peer, WgKey, WgServer } from '$lib/typings';
 import Network from '$lib/network';
 import Shell from '$lib/shell';
@@ -10,34 +8,62 @@ import { WG_PATH } from '$lib/constants';
 import { client, WG_SEVER_PATH } from '$lib/redis';
 import { dynaJoin, isJson } from '$lib/utils';
 import { getPeerConf } from '$lib/wireguard/utils';
+import logger from '$lib/logger';
+import { sha256 } from '$lib/hash';
+import { fsAccess } from '$lib/fs-extra';
 
 export class WGServer {
-  static async stop(id: string): Promise<boolean> {
-    const server = await findServer(id);
-    if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return false;
+  readonly id: string;
+  readonly peers: WGPeers;
+
+  constructor(serverId: string) {
+    if (!serverId) throw new Error('serverId is required');
+
+    if (!WGServer.exists(serverId)) throw new Error('server does not exists');
+
+    this.id = serverId;
+    this.peers = new WGPeers(this);
+  }
+
+  static async exists(id: string): Promise<boolean> {
+    const servers = await getServers();
+    return servers.some((s) => s.id === id);
+  }
+
+  async get(): Promise<WgServer> {
+    if (!fsAccess(WG_PATH)) {
+      fs.mkdirSync(WG_PATH, { recursive: true, mode: 0o600 });
     }
+
+    const server = await findServer(this.id);
+    if (!server) {
+      throw new Error('server not found');
+    }
+
+    if (!fsAccess(resolveConfigPath(server.confId))) {
+      await this.writeConfigFile(server);
+    }
+
+    return server;
+  }
+
+  async stop(): Promise<boolean> {
+    const server = await this.get();
 
     if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
       await Shell.exec(`wg-quick down wg${server.confId}`, true);
     }
 
-    await this.update(id, { status: 'down' });
+    await this.update({ status: 'down' });
     return true;
   }
 
-  static async start(id: string): Promise<boolean> {
-    const server = await findServer(id);
-    if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return false;
-    }
+  async start(): Promise<boolean> {
+    const server = await this.get();
 
     const HASH = getConfigHash(server.confId);
     if (!HASH || server.confHash !== HASH) {
-      await writeConfigFile(server);
-      await WGServer.update(id, { confHash: getConfigHash(server.confId) });
+      await this.writeConfigFile(server);
     }
 
     if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
@@ -46,31 +72,27 @@ export class WGServer {
 
     await Shell.exec(`wg-quick up wg${server.confId}`);
 
-    await this.update(id, { status: 'up' });
+    await this.update({ status: 'up' });
     return true;
   }
 
-  static async remove(id: string): Promise<boolean> {
-    const server = await findServer(id);
-    if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return false;
-    }
+  async remove(): Promise<boolean> {
+    const server = await this.get();
 
-    await this.stop(id);
+    await this.stop();
     if (wgConfExists(server.confId)) {
-      fs.unlinkSync(path.join(WG_PATH, `wg${server.confId}.conf`));
+      fs.unlinkSync(resolveConfigPath(server.confId));
     }
 
-    const index = await findServerIndex(id);
+    const index = await findServerIndex(this.id);
     if (typeof index !== 'number') {
-      console.warn('findServerIndex: index not found');
+      logger.warn('findServerIndex: index not found');
       return true;
     }
 
     const element = await client.lindex(WG_SEVER_PATH, index);
     if (!element) {
-      console.warn('remove: element not found');
+      logger.warn('remove: element not found');
       return true;
     }
 
@@ -79,17 +101,15 @@ export class WGServer {
     return true;
   }
 
-  static async update(id: string, update: Partial<WgServer>): Promise<boolean> {
-    const server = await findServer(id);
-    if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return false;
-    }
-    const index = await findServerIndex(id);
+  async update(update: Partial<WgServer>): Promise<boolean> {
+    const server = await this.get();
+
+    const index = await findServerIndex(this.id);
     if (typeof index !== 'number') {
-      console.warn('findServerIndex: index not found');
+      logger.warn('findServerIndex: index not found');
       return true;
     }
+
     const res = await client.lset(
       WG_SEVER_PATH,
       index,
@@ -99,22 +119,50 @@ export class WGServer {
         updatedAt: new Date().toISOString(),
       }),
     );
+
     return res === 'OK';
   }
 
-  static async findAttachedUuid(confId: number): Promise<string | undefined> {
-    const server = await getServers();
-    return server.find((s) => s.confId === confId)?.id;
+  async writeConfigFile(wg: WgServer): Promise<void> {
+    const CONFIG_PATH = resolveConfigPath(wg.confId);
+    fs.writeFileSync(CONFIG_PATH, await genServerConf(wg), { mode: 0o600 });
+    await this.update({ confHash: getConfigHash(wg.confId) });
   }
 
-  static async addPeer(id: string, peer: WgServer['peers'][0]): Promise<boolean> {
-    const server = await findServer(id);
+  static async getFreePeerIp(serverId: string): Promise<string | undefined> {
+    const server = await findServer(serverId);
     if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return false;
+      logger.error('GetFreePeerIP: no server found');
+      return undefined;
     }
 
-    const confPath = path.join(WG_PATH, `wg${server.confId}.conf`);
+    const reservedIps = server.peers.map((p) => p.allowedIps);
+    const ips = reservedIps.map((ip) => ip.split('/')[0]);
+    const net = server.address.split('/')[0].split('.');
+
+    for (let i = 1; i < 255; i++) {
+      const ip = `${net[0]}.${net[1]}.${net[2]}.${i}`;
+      if (!ips.includes(ip) && ip !== server.address.split('/')[0]) {
+        return ip;
+      }
+    }
+
+    logger.error('GetFreePeerIP: no free ip found');
+    return undefined;
+  }
+}
+
+class WGPeers {
+  private readonly server: WGServer;
+
+  constructor(server: WGServer) {
+    this.server = server;
+  }
+
+  async add(peer: WgServer['peers'][0]): Promise<boolean> {
+    const server = await this.server.get();
+
+    const confPath = resolveConfigPath(server.confId);
     const conf = fs.readFileSync(confPath, 'utf-8');
     const lines = conf.split('\n');
 
@@ -128,13 +176,14 @@ export class WGServer {
       ]),
     );
     fs.writeFileSync(confPath, lines.join('\n'), { mode: 0o600 });
-    await WGServer.update(id, { confHash: getConfigHash(server.confId) });
+    await this.server.update({ confHash: getConfigHash(server.confId) });
 
-    const index = await findServerIndex(id);
+    const index = await findServerIndex(this.server.id);
     if (typeof index !== 'number') {
-      console.warn('findServerIndex: index not found');
+      logger.warn('findServerIndex: index not found');
       return true;
     }
+
     await client.lset(
       WG_SEVER_PATH,
       index,
@@ -145,24 +194,20 @@ export class WGServer {
     );
 
     if (server.status === 'up') {
-      await this.stop(server.id);
-      await this.start(server.id);
+      await this.server.stop();
+      await this.server.start();
     }
 
     return true;
   }
 
-  static async removePeer(serverId: string, publicKey: string): Promise<boolean> {
-    const server = await findServer(serverId);
-    if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return false;
-    }
+  async remove(publicKey: string): Promise<boolean> {
+    const server = await this.server.get();
     const peers = await wgPeersStr(server.confId);
 
-    const index = await findServerIndex(serverId);
+    const index = await findServerIndex(this.server.id);
     if (typeof index !== 'number') {
-      console.warn('findServerIndex: index not found');
+      logger.warn('findServerIndex: index not found');
       return true;
     }
     await client.lset(
@@ -176,35 +221,31 @@ export class WGServer {
 
     const peerIndex = peers.findIndex((p) => p.includes(`PublicKey = ${publicKey}`));
     if (peerIndex === -1) {
-      console.warn('removePeer: no peer found');
+      logger.warn('removePeer: no peer found');
       return false;
     }
 
-    const confPath = path.join(WG_PATH, `wg${server.confId}.conf`);
+    const confPath = resolveConfigPath(server.confId);
     const conf = fs.readFileSync(confPath, 'utf-8');
     const serverConfStr = conf.includes('[Peer]') ? conf.split('[Peer]')[0] : conf;
     const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n');
     fs.writeFileSync(confPath, `${serverConfStr}\n${peersStr}`, { mode: 0o600 });
-    await WGServer.update(server.id, { confHash: getConfigHash(server.confId) });
+    await this.server.update({ confHash: getConfigHash(server.confId) });
 
     if (server.status === 'up') {
-      await this.stop(server.id);
-      await this.start(server.id);
+      await this.server.stop();
+      await this.server.start();
     }
 
     return true;
   }
 
-  static async updatePeer(serverId: string, publicKey: string, update: Partial<Peer>): Promise<boolean> {
-    const server = await findServer(serverId);
-    if (!server) {
-      console.error('WGServer:UpdatePeer: server could not be updated (Reason: not exists)');
-      return false;
-    }
+  async update(publicKey: string, update: Partial<Peer>): Promise<boolean> {
+    const server = await this.server.get();
 
-    const index = await findServerIndex(serverId);
+    const index = await findServerIndex(this.server.id);
     if (typeof index !== 'number') {
-      console.warn('findServerIndex: index not found');
+      logger.warn('findServerIndex: index not found');
       return true;
     }
 
@@ -214,73 +255,30 @@ export class WGServer {
     });
 
     await client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }));
-    await this.storePeers({ id: server.id, confId: server.confId }, publicKey, updatedPeers);
+    await this.storePeers(publicKey, updatedPeers);
 
     if (server.status === 'up') {
-      await this.stop(serverId);
-      await this.start(serverId);
+      await this.server.stop();
+      await this.server.start();
     }
 
     return true;
   }
 
-  private static async getPeerIndex(id: string, publicKey: string): Promise<number | undefined> {
-    const server = await findServer(id);
-    if (!server) {
-      console.error('server could not be updated (reason: not exists)');
-      return undefined;
-    }
+  async getIndex(publicKey: string): Promise<number | undefined> {
+    const server = await this.server.get();
     return server.peers.findIndex((p) => p.publicKey === publicKey);
   }
 
-  private static async storePeers(
-    sd: Pick<WgServer, 'id' | 'confId'>,
-    publicKey: string,
-    peers: Peer[],
-  ): Promise<void> {
-    const peerIndex = await this.getPeerIndex(sd.id, publicKey);
-    if (peerIndex === -1) {
-      console.warn('WGServer:StorePeers: no peer found');
-      return;
-    }
-
-    const confPath = path.join(WG_PATH, `wg${sd.confId}.conf`);
-    const conf = fs.readFileSync(confPath, 'utf-8');
-    const serverConfStr = conf.includes('[Peer]') ? conf.split('[Peer]')[0] : conf;
-
-    const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n');
-    fs.writeFileSync(confPath, `${serverConfStr}\n${peersStr}`, { mode: 0o600 });
-    await WGServer.update(sd.id, { confHash: getConfigHash(sd.confId) });
-  }
-
-  static async getFreePeerIp(id: string): Promise<string | undefined> {
-    const server = await findServer(id);
+  async generateConfig(peerId: string): Promise<string | undefined> {
+    const server = await findServer(this.server.id);
     if (!server) {
-      console.error('getFreePeerIp: server not found');
-      return undefined;
-    }
-    const reservedIps = server.peers.map((p) => p.allowedIps);
-    const ips = reservedIps.map((ip) => ip.split('/')[0]);
-    const net = server.address.split('/')[0].split('.');
-    for (let i = 1; i < 255; i++) {
-      const ip = `${net[0]}.${net[1]}.${net[2]}.${i}`;
-      if (!ips.includes(ip) && ip !== server.address.split('/')[0]) {
-        return ip;
-      }
-    }
-    console.error('getFreePeerIp: no free ip found');
-    return undefined;
-  }
-
-  static async generatePeerConfig(id: string, peerId: string): Promise<string | undefined> {
-    const server = await findServer(id);
-    if (!server) {
-      console.error('generatePeerConfig: server not found');
+      logger.error('generatePeerConfig: server not found');
       return undefined;
     }
     const peer = server.peers.find((p) => p.id === peerId);
     if (!peer) {
-      console.error('generatePeerConfig: peer not found');
+      logger.error('generatePeerConfig: peer not found');
       return undefined;
     }
     return await getPeerConf({
@@ -290,6 +288,28 @@ export class WGServer {
       dns: server.dns,
     });
   }
+
+  private async storePeers(publicKey: string, peers: Peer[]): Promise<void> {
+    const { confId } = await this.server.get();
+
+    const peerIndex = await this.getIndex(publicKey);
+    if (peerIndex === -1) {
+      logger.warn('WGServer:StorePeers: no peer found');
+      return;
+    }
+
+    const confPath = resolveConfigPath(confId);
+    const conf = fs.readFileSync(confPath, 'utf-8');
+    const serverConfStr = conf.includes('[Peer]') ? conf.split('[Peer]')[0] : conf;
+
+    const peersStr = peers.filter((_, i) => i !== peerIndex).join('\n');
+    fs.writeFileSync(confPath, `${serverConfStr}\n${peersStr}`, { mode: 0o600 });
+    await this.server.update({ confHash: getConfigHash(confId) });
+  }
+}
+
+function resolveConfigPath(confId: number): string {
+  return path.resolve(path.join(WG_PATH, `wg${confId}.conf`));
 }
 
 /**
@@ -301,7 +321,7 @@ async function wgCheckout(configId: number): Promise<boolean> {
 }
 
 export async function readWgConf(configId: number): Promise<WgServer> {
-  const confPath = path.join(WG_PATH, `wg${configId}.conf`);
+  const confPath = resolveConfigPath(configId);
   const conf = fs.readFileSync(confPath, 'utf-8');
   const lines = conf.split('\n');
   const server: WgServer = {
@@ -392,13 +412,8 @@ export async function readWgConf(configId: number): Promise<WgServer> {
  * @param configId
  */
 function wgConfExists(configId: number): boolean {
-  const confPath = path.join(WG_PATH, `wg${configId}.conf`);
-  try {
-    fs.accessSync(confPath);
-    return true;
-  } catch (e) {
-    return false;
-  }
+  const confPath = resolveConfigPath(configId);
+  return fsAccess(confPath);
 }
 
 /**
@@ -421,7 +436,7 @@ async function syncServers(): Promise<boolean> {
 }
 
 function wgPeersStr(configId: number): string[] {
-  const confPath = path.join(WG_PATH, `wg${configId}.conf`);
+  const confPath = path.resolve(WG_PATH, `wg${configId}.conf`);
   const conf = fs.readFileSync(confPath, 'utf-8');
   const rawPeers = conf.split('[Peer]');
   return rawPeers.slice(1).map((p) => `[Peer]\n${p}`);
@@ -491,13 +506,14 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
     await client.lpush(WG_SEVER_PATH, JSON.stringify(server));
   }
 
-  const CONFIG_PATH = path.join(WG_PATH, `wg${confId}.conf`);
+  const CONFIG_PATH = resolveConfigPath(confId);
 
   // save server config to disk
   fs.writeFileSync(CONFIG_PATH, await genServerConf(server), { mode: 0o600 });
 
   // updating hash of the config
-  await WGServer.update(uuid, { confHash: getConfigHash(confId) });
+  const wg = new WGServer(uuid);
+  await wg.update({ confHash: getConfigHash(confId) });
 
   // to ensure interface does not exists
   await Shell.exec(`wg-quick down wg${confId}`, true);
@@ -539,15 +555,9 @@ export function getConfigHash(confId: number): string | undefined {
     return undefined;
   }
 
-  const confPath = path.join(WG_PATH, `wg${confId}.conf`);
+  const confPath = resolveConfigPath(confId);
   const conf = fs.readFileSync(confPath, 'utf-8');
-  return Hex.stringify(SHA256(conf));
-}
-
-export async function writeConfigFile(wg: WgServer): Promise<void> {
-  const CONFIG_PATH = path.join(WG_PATH, `wg${wg.confId}.conf`);
-  fs.writeFileSync(CONFIG_PATH, await genServerConf(wg), { mode: 0o600 });
-  await WGServer.update(wg.id, { confHash: getConfigHash(wg.confId) });
+  return sha256(conf);
 }
 
 export function maxConfId(): number {
@@ -589,8 +599,8 @@ export async function findServer(id: string | undefined, hash?: string): Promise
   return id
     ? servers.find((s) => s.id === id)
     : hash && isJson(hash)
-    ? servers.find((s) => JSON.stringify(s) === hash)
-    : undefined;
+      ? servers.find((s) => JSON.stringify(s) === hash)
+      : undefined;
 }
 
 export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: string }> {

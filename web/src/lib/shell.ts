@@ -23,7 +23,7 @@ export default class Shell {
           )}`;
 
           if (safe) {
-            logger.warn(message);
+            logger.debug(message);
             return resolve(stderr);
           }
 

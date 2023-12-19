@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { fsAccess, fsTouch } from '$lib/fs-extra';
 
 const LOG_LEVEL = process.env.LOG_LEVEL || 'trace';
-const LOG_FILE_PATH = process.env.LOG_FILE_PATH || '/var/vlogs/web.log';
+const LOG_FILE_PATH = process.env.LOG_FILE_PATH || '/var/vlogs/web';
 const LOG_COLORS = process.env.LOG_COLORS || 'true';
 
 const prettyStream = pretty({
@@ -24,6 +24,7 @@ fsTouch(LOG_FILE_PATH)
   .then((ok) => {
     if (!ok) {
       logger.warn('Log file is not accessible');
+      return;
     }
     logger = pino(
       {
@@ -37,8 +38,6 @@ fsTouch(LOG_FILE_PATH)
       ]),
     );
   })
-  .catch((error) => {
-    logger.error(error);
-  });
+  .catch(console.error);
 
 export default logger;
