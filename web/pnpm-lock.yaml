@@ -32,6 +32,9 @@ dependencies:
   lucide-svelte:
     specifier: ^0.294.0
     version: 0.294.0(svelte@4.2.8)
+  node-netkit:
+    specifier: 0.1.0-canary.1
+    version: 0.1.0-canary.1
   pino:
     specifier: ^8.17.1
     version: 8.17.1
@@ -44,6 +47,9 @@ dependencies:
   qrcode:
     specifier: ^1.5.3
     version: 1.5.3
+  svelte-french-toast:
+    specifier: ^1.2.0
+    version: 1.2.0(svelte@4.2.8)
   tailwind-merge:
     specifier: ^2.1.0
     version: 2.1.0
@@ -2068,6 +2074,12 @@ packages:
     hasBin: true
     dev: false
 
+  /node-netkit@0.1.0-canary.1:
+    resolution: {integrity: sha512-RjSQt0LBeWPkSlQ8anel3vplQONVahdI5nkA6/PWwA9ZZIY/g/sFB0o62D6PYU264XWssEJFPkRHIpoGBfNBIA==}
+    dependencies:
+      execa: 8.0.1
+    dev: false
+
   /node-releases@2.0.13:
     resolution: {integrity: sha512-uYr7J37ae/ORWdZeQ1xxMJe3NtdmqMC/JZK+geofDrkLUApKRHPd18/TxtBOJ4A0/+uUIliorNrfYV6s1b02eQ==}
     dev: true
@@ -2696,6 +2708,15 @@ packages:
       - sugarss
     dev: true
 
+  /svelte-french-toast@1.2.0(svelte@4.2.8):
+    resolution: {integrity: sha512-5PW+6RFX3xQPbR44CngYAP1Sd9oCq9P2FOox4FZffzJuZI2mHOB7q5gJBVnOiLF5y3moVGZ7u2bYt7+yPAgcEQ==}
+    peerDependencies:
+      svelte: ^3.57.0 || ^4.0.0
+    dependencies:
+      svelte: 4.2.8
+      svelte-writable-derived: 3.1.0(svelte@4.2.8)
+    dev: false
+
   /svelte-hmr@0.15.3(svelte@4.2.8):
     resolution: {integrity: sha512-41snaPswvSf8TJUhlkoJBekRrABDXDMdpNpT2tfHIv4JuhgvHqLMhEPGtaQn0BmbNSTkuz2Ed20DF2eHw0SmBQ==}
     engines: {node: ^12.20 || ^14.13.1 || >= 16}
@@ -2752,6 +2773,14 @@ packages:
       svelte: 4.2.8
       typescript: 5.3.3
     dev: true
+
+  /svelte-writable-derived@3.1.0(svelte@4.2.8):
+    resolution: {integrity: sha512-cTvaVFNIJ036vSDIyPxJYivKC7ZLtcFOPm1Iq6qWBDo1fOHzfk6ZSbwaKrxhjgy52Rbl5IHzRcWgos6Zqn9/rg==}
+    peerDependencies:
+      svelte: ^3.2.1 || ^4.0.0-next.1
+    dependencies:
+      svelte: 4.2.8
+    dev: false
 
   /svelte@4.2.8:
     resolution: {integrity: sha512-hU6dh1MPl8gh6klQZwK/n73GiAHiR95IkFsesLPbMeEZi36ydaXL/ZAb4g9sayT0MXzpxyZjR28yderJHxcmYA==}

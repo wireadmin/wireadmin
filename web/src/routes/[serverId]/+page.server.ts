@@ -10,26 +10,28 @@ export const load: PageServerLoad = async ({ params }) => {
   const { serverId } = params;
   const exists = await WGServer.exists(serverId ?? '');
 
-  if (exists) {
-    const wg = new WGServer(serverId);
-    const server = await wg.get();
-
-    if (server.status === 'up') {
-      const hasInterface = await wg.isUp();
-      if (!hasInterface) {
-        await wg.start();
-      }
-    }
-
-    const usage = await wg.getUsage();
-
-    return {
-      server,
-      usage,
-    };
+  if (!exists) {
+    logger.warn(`Server not found. Redirecting to home page. ServerId: ${serverId}`);
+    throw redirect(303, '/');
   }
 
-  throw error(404, 'Not found');
+  const wg = new WGServer(serverId);
+  const server = await wg.get();
+
+  if (server.status === 'up') {
+    const hasInterface = await wg.isUp();
+    if (!hasInterface) {
+      logger.debug(`Interface not found. Starting WireGuard. ServerId: ${serverId}`);
+      await wg.start();
+    }
+  }
+
+  const usage = await wg.getUsage();
+
+  return {
+    server,
+    usage,
+  };
 };
 
 export const actions: Actions = {
@@ -98,19 +100,19 @@ export const actions: Actions = {
         const wg = new WGServer(server.id);
         await wg.remove();
       }
-
-      return { ok: true };
     } catch (e) {
-      console.error('Exception:', e);
+      logger.error(e);
       throw error(500, 'Unhandled Exception');
     }
+
+    return redirect(303, '/');
   },
   'change-server-state': async ({ request, params }) => {
     const { serverId } = params;
 
     const server = await findServer(serverId ?? '');
     if (!server) {
-      logger.error('Action: ChangeState: Server not found');
+      logger.warn(`Action: ChangeState: Server not found. ServerId: ${serverId}`);
       throw redirect(303, '/');
     }
 
@@ -140,19 +142,20 @@ export const actions: Actions = {
             break;
         }
       }
-
-      return { ok: true };
     } catch (e) {
       logger.error({
-        message: 'Exception: ChangeState',
+        message: `Exception: ChangeState. ServerId: ${serverId}`,
         exception: e,
       });
       throw error(500, 'Unhandled Exception');
     }
+
+    return { ok: true };
   },
   create: async (event) => {
     const form = await superValidate(event, CreatePeerSchema);
     if (!form.valid) {
+      logger.warn('CreatePeer: Bad Request: failed to validate form');
       return setError(form, 'Bad Request');
     }
 
@@ -162,13 +165,13 @@ export const actions: Actions = {
     try {
       const server = await findServer(serverId ?? '');
       if (!server) {
-        console.error('Server not found');
+        logger.error(`Server not found. ServerId: ${serverId}`);
         return setError(form, 'Server not found');
       }
 
       const freeAddress = await WGServer.getFreePeerIp(server.id);
       if (!freeAddress) {
-        console.error(`ERR: ServerId: ${serverId};`, 'No free addresses;');
+        logger.error(`No free addresses. ServerId: ${serverId}`);
         return setError(form, 'No free addresses');
       }
 
@@ -186,13 +189,16 @@ export const actions: Actions = {
       });
 
       if (!addedPeer) {
-        console.error(`ERR: ServerId: ${serverId};`, 'Failed to add peer;');
+        logger.error(`Failed to add peer. ServerId: ${serverId}`);
         return setError(form, 'Failed to add peer');
       }
 
-      return { ok: true };
+      return { form };
     } catch (e) {
-      console.error('Exception:', e);
+      logger.error({
+        message: `Exception: CreatePeer. ServerId: ${serverId}`,
+        exception: e,
+      });
       return setError(form, 'Unhandled Exception');
     }
   },

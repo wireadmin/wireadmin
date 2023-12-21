@@ -14,27 +14,27 @@
     FormButton,
     FormField,
     FormInput,
+    FormItem,
     FormLabel,
     FormValidation,
   } from '$lib/components/ui/form';
-  import { FormItem } from '$lib/components/ui/form/index.js';
   import { cn } from '$lib/utils';
   import { invalidateAll } from '$app/navigation';
-  import { createEventDispatcher } from 'svelte';
-
-  const dispatch = createEventDispatcher();
+  import toast from 'svelte-french-toast';
 
   let loading: boolean = false;
+  let dialogOpen = false;
 
   let form: SuperValidated<CreatePeerSchemaType>;
 
   const handleSuccess = async () => {
     await invalidateAll();
-    dispatch('close', 'OK');
+    toast.success('Peer created!');
+    dialogOpen = false;
   };
 </script>
 
-<Dialog>
+<Dialog bind:open={dialogOpen}>
   <DialogTrigger asChild let:builder>
     <slot {builder} />
   </DialogTrigger>
@@ -50,7 +50,7 @@
       method={'POST'}
       let:config
       options={{
-        onSubmit: (s) => {
+        onSubmit: () => {
           loading = true;
         },
         onError: (e) => {
@@ -61,6 +61,7 @@
           if (result.type === 'success') {
             handleSuccess();
           } else {
+            toast.error('Failed to create peer');
             console.error('Server-failure: Result:', result);
           }
           loading = false;

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "vite dev",
+    "dev": "NODE_ENV=development vite dev",
     "build": "NODE_ENV=build vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -11,7 +11,7 @@
     "test": "mocha",
     "lint": "prettier --check .",
     "format": "prettier --write .",
-    "start": "node ./build/index.js"
+    "start": "NODE_ENV=production node ./build/index.js"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^2.0.1",
@@ -50,10 +50,12 @@
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-svelte": "^0.294.0",
+    "node-netkit": "0.1.0-canary.1",
     "pino": "^8.17.1",
     "pino-pretty": "^10.3.0",
     "pretty-bytes": "^6.1.1",
     "qrcode": "^1.5.3",
+    "svelte-french-toast": "^1.2.0",
     "tailwind-merge": "^2.1.0",
     "tailwind-variants": "^0.1.18"
   }

@@ -10,7 +10,7 @@ import logger from '$lib/logger';
 import { sha256 } from '$lib/hash';
 import { fsAccess } from '$lib/fs-extra';
 import { getClient } from '$lib/redis';
-import { execaCommand } from 'execa';
+import { execa } from 'execa';
 
 export class WGServer {
   readonly id: string;
@@ -51,7 +51,7 @@ export class WGServer {
     const server = await this.get();
 
     if (await Network.interfaceExists(`wg${server.confId}`)) {
-      await execaCommand(`wg-quick down wg${server.confId}`);
+      await execa(`wg-quick down wg${server.confId}`, { shell: true });
     }
 
     await this.update({ status: 'down' });
@@ -70,10 +70,10 @@ export class WGServer {
     logger.debug('WGServer:Start: isAlreadyUp:', isAlreadyUp);
     if (isAlreadyUp) {
       logger.debug('WGServer:Start: interface already up... taking down');
-      await execaCommand(`wg-quick down wg${server.confId}`);
+      await execa(`wg-quick down wg${server.confId}`, { shell: true });
     }
 
-    await execaCommand(`wg-quick up wg${server.confId}`);
+    await execa(`wg-quick up wg${server.confId}`, { shell: true });
 
     await this.update({ status: 'up' });
     return true;
@@ -137,7 +137,7 @@ export class WGServer {
   async isUp(): Promise<boolean> {
     const server = await this.get();
     try {
-      const res = await execaCommand(`wg show wg${server.confId}`);
+      const res = await execa(`wg show wg${server.confId}`, { shell: true });
       return res.stdout.includes('wg');
     } catch (e) {
       return false;
@@ -158,7 +158,9 @@ export class WGServer {
       return usages;
     }
 
-    const { stdout, stderr } = await execaCommand(`wg show wg${server.confId} transfer`);
+    const { stdout, stderr } = await execa(`wg show wg${server.confId} transfer`, {
+      shell: true,
+    });
     if (stderr) {
       logger.warn(`WgServer: GetUsage: ${stderr}`);
       return usages;
@@ -502,9 +504,11 @@ function wgPeersStr(configId: number): string[] {
 }
 
 export async function generateWgKey(): Promise<WgKey> {
-  const { stdout: privateKey } = await execaCommand('wg genkey');
-  const { stdout: publicKey } = await execaCommand(`echo ${privateKey} | wg pubkey`);
-  const { stdout: preSharedKey } = await execaCommand('wg genkey');
+  const { stdout: privateKey } = await execa('wg genkey', { shell: true });
+  const { stdout: publicKey } = await execa(`echo ${privateKey} | wg pubkey`, {
+    shell: true,
+  });
+  const { stdout: preSharedKey } = await execa('wg genkey', { shell: true });
   return { privateKey, publicKey, preSharedKey };
 }
 
@@ -673,7 +677,9 @@ export async function findServer(
 
 export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: string }> {
   const inet = await Network.defaultInterface();
-  const { stdout: inet_address } = await execaCommand(`hostname -i | awk '{print $1}'`);
+  const { stdout: inet_address } = await execa(`hostname -i | awk '{print $1}'`, {
+    shell: true,
+  });
 
   const source = `${s.address}/24`;
   const wg_inet = `wg${s.confId}`;

@@ -28,12 +28,12 @@ export const actions: Actions = {
 
     const server = await findServer(serverId ?? '');
     if (!server) {
-      logger.error('Server not found');
+      logger.error('Actions: RenameServer: Server not found');
       return error(404, 'Not found');
     }
 
     if (!NameSchema.safeParse(name).success) {
-      logger.error('Peer name is invalid');
+      logger.error('Actions: RenameServer: Server name is invalid');
       return error(400, 'Bad Request');
     }
 
@@ -69,11 +69,11 @@ export const actions: Actions = {
       });
 
       return {
-        ok: true,
+        form,
         serverId,
       };
-    } catch (e: any) {
-      logger.error('Exception:', e);
+    } catch (e) {
+      logger.error(e);
       return setError(form, 'Unhandled Exception');
     }
   },

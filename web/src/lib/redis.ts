@@ -16,7 +16,7 @@ export function setClient(redis: RedisClient): void {
   client = redis;
 }
 
-if (process.env.NODE_ENV !== 'build') {
+if (process.env.NODE_ENV && ['development', 'production'].includes(process.env.NODE_ENV)) {
   setClient(
     new Redis({
       port: 6479,

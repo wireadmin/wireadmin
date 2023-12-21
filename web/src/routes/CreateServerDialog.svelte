@@ -19,22 +19,19 @@
     FormSwitch,
     FormValidation,
   } from '$lib/components/ui/form';
-  import { goto } from '$app/navigation';
   import { FormItem } from '$lib/components/ui/form/index.js';
   import { cn } from '$lib/utils';
-  import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-  } from '$lib/components/ui/collapsible';
+  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '$lib/components/ui/collapsible';
   import { Button } from '$lib/components/ui/button';
+  import toast from 'svelte-french-toast';
 
   let loading: boolean = false;
+  let dialogOpen = false;
 
   let form: SuperValidated<CreateServerSchemaType>;
 </script>
 
-<Dialog>
+<Dialog bind:open={dialogOpen}>
   <DialogTrigger asChild let:builder>
     <slot {builder} />
   </DialogTrigger>
@@ -50,7 +47,7 @@
       method={'POST'}
       let:config
       options={{
-        onSubmit: (s) => {
+        onSubmit: () => {
           loading = true;
         },
         onError: (e) => {
@@ -60,9 +57,11 @@
         onResult: ({ result }) => {
           loading = false;
           if (result.type === 'success') {
-            goto(`/${result.data.serverId}`);
+            dialogOpen = false;
+            toast.success('Server created successfully!');
           } else {
             console.error('Server-failure: Result:', result);
+            toast.error('Server failed to create.');
           }
         },
       }}
@@ -89,7 +88,7 @@
           <FormLabel>Port</FormLabel>
           <FormInput placeholder={'e.g. 51820'} type={'text'} />
           <FormDescription
-            >This is the port that the WireGuard server will listen on.</FormDescription
+          >This is the port that the WireGuard server will listen on.</FormDescription
           >
           <FormValidation />
         </FormItem>
@@ -119,7 +118,7 @@
               <FormLabel>DNS</FormLabel>
               <FormInput placeholder={'e.g. 1.1.1.1'} type={'text'} />
               <FormDescription
-                >Optional. This is the DNS server that will be pushed to clients.</FormDescription
+              >Optional. This is the DNS server that will be pushed to clients.</FormDescription
               >
               <FormValidation />
             </FormItem>

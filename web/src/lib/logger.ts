@@ -19,13 +19,8 @@ let logger: Logger = pino(
   pino.multistream([prettyStream]),
 );
 
-fsTouch(LOG_FILE_PATH)
-  .then(() => fsAccess(LOG_FILE_PATH))
-  .then((ok) => {
-    if (!ok) {
-      logger.warn('Log file is not accessible');
-      return;
-    }
+if (fsAccess(LOG_FILE_PATH)) {
+  fsTouch(LOG_FILE_PATH).then(() => {
     logger = pino(
       {
         level: LOG_LEVEL,
@@ -37,7 +32,9 @@ fsTouch(LOG_FILE_PATH)
         }),
       ]),
     );
-  })
-  .catch(console.error);
+  });
+} else {
+  logger.warn('Log file is not accessible');
+}
 
 export default logger;

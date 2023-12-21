@@ -8,7 +8,7 @@ export const GET: RequestHandler = async () => {
 
   // if the host is not set, then we are using the server's public IP
   if (!WG_HOST) {
-    const { stdout: resp } = await execaCommand('curl -s ifconfig.me');
+    const { stdout: resp } = await execa('curl -s ifconfig.me', { shell: true });
     WG_HOST = resp.trim();
   }
 
