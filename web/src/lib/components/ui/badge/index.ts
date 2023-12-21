@@ -11,6 +11,7 @@ export const badgeVariants = tv({
       destructive:
         'bg-destructive hover:bg-destructive/80 border-transparent text-destructive-foreground',
       outline: 'text-foreground',
+      tor: 'bg-purple-700 hover:bg-purple-700/80 border-transparent text-white',
     },
   },
   defaultVariants: {

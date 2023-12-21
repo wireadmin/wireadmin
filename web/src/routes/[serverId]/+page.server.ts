@@ -1,4 +1,4 @@
-import { type Actions, error } from '@sveltejs/kit';
+import { type Actions, error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { findServer, generateWgKey, WGServer } from '$lib/wireguard';
 import { NameSchema } from '$lib/wireguard/schema';
@@ -8,10 +8,25 @@ import logger from '$lib/logger';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { serverId } = params;
-  const server = await findServer(serverId);
+  const exists = await WGServer.exists(serverId ?? '');
 
-  if (server) {
-    return { server };
+  if (exists) {
+    const wg = new WGServer(serverId);
+    const server = await wg.get();
+
+    if (server.status === 'up') {
+      const hasInterface = await wg.hasInterface();
+      if (!hasInterface) {
+        await wg.start();
+      }
+    }
+
+    const usage = await wg.getUsage();
+
+    return {
+      server,
+      usage,
+    };
   }
 
   throw error(404, 'Not found');
@@ -95,8 +110,8 @@ export const actions: Actions = {
 
     const server = await findServer(serverId ?? '');
     if (!server) {
-      console.error('Server not found');
-      throw error(404, 'Not found');
+      logger.error('Action: ChangeState: Server not found');
+      throw redirect(303, '/');
     }
 
     const form = await request.formData();
@@ -128,7 +143,7 @@ export const actions: Actions = {
 
       return { ok: true };
     } catch (e) {
-      console.error('Exception:', e);
+      logger.error('Exception: ChangeState:', e);
       throw error(500, 'Unhandled Exception');
     }
   },

@@ -3,12 +3,12 @@
 
   export let showInHover: boolean = false;
   export let rootClass: string | undefined = undefined;
-  export let value: string;
+  export let value: string | number;
   let className: string | undefined = undefined;
   export { className as class };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(value);
+    navigator.clipboard.writeText(value?.toString() || '');
   };
 </script>
 

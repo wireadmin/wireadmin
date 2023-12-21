@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { Card } from '$lib/components/ui/card';
   import CreatePeerDialog from './CreatePeerDialog.svelte';
-  import { CardContent, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card/index.js';
+  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import Peer from './Peer.svelte';
   import fetchAction from '$lib/fetch-action';
@@ -12,6 +11,8 @@
   import { MiddleEllipsis } from '$lib/components/middle-ellipsis';
   import { goto, invalidateAll } from '$app/navigation';
   import { Empty } from '$lib/components/empty';
+  import prettyBytes from 'pretty-bytes';
+  import { onDestroy } from 'svelte';
 
   export let data: PageData;
 
@@ -57,16 +58,13 @@
     const resp = await fetchAction({
       action: '?/change-server-state',
       method: 'POST',
-      form: {
-        state,
-      },
+      form: { state },
     });
     if (resp.statusText !== 'OK') {
-      console.error('err: failed to change server state.');
+      console.error('error: failed to change server state.');
       return;
     }
 
-    console.log('server state changed!');
     if (state === 'remove') {
       await goto('/');
       return;
@@ -74,6 +72,16 @@
 
     await invalidateAll();
   };
+
+  // revalidate every 2 seconds
+  const interval = setInterval(() => {
+    invalidateAll();
+  }, 2000);
+
+  onDestroy(() => {
+    clearInterval(interval);
+  });
+
 </script>
 
 <Card>
@@ -87,15 +95,38 @@
         {data.server.name}
       </CopiableText>
     </DetailRow>
+
+    {#if data.server.tor}
+      <DetailRow label={'Mode'}>
+        <Badge variant="tor">Tor</Badge>
+      </DetailRow>
+    {/if}
+
     <DetailRow label={'IP address'}>
       <pre> {data.server.address}/24 </pre>
     </DetailRow>
+
     <DetailRow label={'Listen Port'}>
       <pre> {data.server.listen} </pre>
     </DetailRow>
+
+    <DetailRow label={'Total Usage'}>
+      <div class="flex items-center gap-3 text-sm">
+        <div class="flex items-center gap-x-1.5">
+          <i class="fas fa-arrow-up text-gray-500"></i>
+          <span>{prettyBytes(data.usage.total.tx)}</span>
+        </div>
+        <div class="flex items-center gap-x-1.5">
+          <i class="fas fa-arrow-down text-gray-500"></i>
+          <span>{prettyBytes(data.usage.total.rx)}</span>
+        </div>
+      </div>
+    </DetailRow>
+
     <DetailRow label={'Status'}>
       <Badge variant={data.server.status === 'up' ? 'success' : 'destructive'} />
     </DetailRow>
+
     <DetailRow label={'Public Key'}>
       <CopiableText value={data.server.publicKey}>
         <MiddleEllipsis content={data.server.publicKey} maxLength={12} />

@@ -11,6 +11,7 @@ import logger from '$lib/logger';
 import { sha256 } from '$lib/hash';
 import { fsAccess } from '$lib/fs-extra';
 import { getClient } from '$lib/redis';
+import { execaCommand } from 'execa';
 
 export class WGServer {
   readonly id: string;
@@ -133,25 +134,41 @@ export class WGServer {
 
   async hasInterface(): Promise<boolean> {
     const server = await this.get();
-    return await Network.checkInterfaceExists(`wg${server.confId}`);
+    try {
+      const res = await execaCommand(`wg show wg${server.confId}`);
+      return res.stdout.includes('wg');
+    } catch (e) {
+      return false;
+    }
   }
 
   async getUsage(): Promise<WgUsage> {
     const server = await this.get();
     const hasInterface = await this.hasInterface();
+
+    const usages: WgUsage = {
+      total: { rx: 0, tx: 0 },
+      peers: new Map(),
+    };
+
     if (!hasInterface) {
-      logger.error('GetUsage: interface does not exists');
-      return new Map();
+      logger.debug('GetUsage: interface does not exists');
+      return usages;
     }
 
-    const res = await Shell.exec(`wg show wg${server.confId} transfer`);
-    const lines = res.split('\n');
+    const { stdout, stderr } = await execaCommand(`wg show wg${server.confId} transfer`);
+    if (stderr) {
+      logger.warn(`WgServer: GetUsage: ${stderr}`);
+      return usages;
+    }
 
-    const usages: WgUsage = new Map();
+    const lines = stdout.split('\n');
     for (const line of lines) {
-      const [peer, rx, tx] = line.split('\t');
+      const [peer, tx, rx] = line.split('\t');
       if (!peer) continue;
-      usages.set(peer, { rx: Number(rx), tx: Number(tx) });
+      usages.peers.set(peer, { rx: Number(rx), tx: Number(tx) });
+      usages.total.rx += Number(rx);
+      usages.total.tx += Number(tx);
     }
 
     return usages;
@@ -180,7 +197,10 @@ export class WGServer {
   }
 }
 
-export type WgUsage = Map<string, PeerUsage>;
+export type WgUsage = {
+  total: PeerUsage;
+  peers: Map<string, PeerUsage>;
+};
 
 export type PeerUsage = {
   rx: number;
