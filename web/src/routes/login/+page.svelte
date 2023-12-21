@@ -18,6 +18,9 @@
 
   const options: FormOptions<typeof formSchema> = {
     validators: formSchema,
+    warnings: {
+      noValidationAndConstraints: false,
+    },
     onResult: ({ result }) => {
       if (result.type === 'success') {
         goto('/');

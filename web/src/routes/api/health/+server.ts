@@ -1,17 +1,21 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { getConfigHash, getServers, WGServer } from '$lib/wireguard';
+import { getServers, WGServer } from '$lib/wireguard';
 import logger from '$lib/logger';
 
 export const GET: RequestHandler = async () => {
   try {
-    const servers = await getServers();
+    for (const { id } of await getServers()) {
+      const wg = new WGServer(id);
+      const server = await wg.get();
+      const hasInterface = await wg.hasInterface();
 
-    for (const s of servers) {
-      const wg = new WGServer(s.id);
-
-      // Start server
-      if (s.status === 'up') {
+      // If the server is up and the interface doesn't exist, start it
+      if (server.status === 'up' && !hasInterface) {
         await wg.start();
+      }
+
+      if (server.status === 'down' && hasInterface) {
+        await wg.stop();
       }
     }
   } catch (e) {

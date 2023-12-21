@@ -131,6 +131,32 @@ export class WGServer {
     await this.update({ confHash: getConfigHash(wg.confId) });
   }
 
+  async hasInterface(): Promise<boolean> {
+    const server = await this.get();
+    return await Network.checkInterfaceExists(`wg${server.confId}`);
+  }
+
+  async getUsage(): Promise<WgUsage> {
+    const server = await this.get();
+    const hasInterface = await this.hasInterface();
+    if (!hasInterface) {
+      logger.error('GetUsage: interface does not exists');
+      return new Map();
+    }
+
+    const res = await Shell.exec(`wg show wg${server.confId} transfer`);
+    const lines = res.split('\n');
+
+    const usages: WgUsage = new Map();
+    for (const line of lines) {
+      const [peer, rx, tx] = line.split('\t');
+      if (!peer) continue;
+      usages.set(peer, { rx: Number(rx), tx: Number(tx) });
+    }
+
+    return usages;
+  }
+
   static async getFreePeerIp(serverId: string): Promise<string | undefined> {
     const server = await findServer(serverId);
     if (!server) {
@@ -153,6 +179,13 @@ export class WGServer {
     return undefined;
   }
 }
+
+export type WgUsage = Map<string, PeerUsage>;
+
+export type PeerUsage = {
+  rx: number;
+  tx: number;
+};
 
 class WGPeers {
   private readonly server: WGServer;
