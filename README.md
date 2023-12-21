@@ -2,9 +2,9 @@
 
 ![Screenshot](assets/screenshot-1.png)
 
-|                                                                                            |                                                                                            |
-|:------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:| 
-| <img src="assets/screenshot-2.png" alt="screenshot" style="width:100%;max-height:300px;"/> | <img src="assets/screenshot-3.png" alt="screenshot" style="width:100%;max-height:300px;"/> |
+|                                                                                            |                                                                                            |                                                                                            |
+|:------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|
+| <img src="assets/screenshot-2.png" alt="screenshot" style="width:100%;max-height:300px;"/> | <img src="assets/screenshot-4.png" alt="screenshot" style="width:100%;max-height:300px;"/> | <img src="assets/screenshot-3.png" alt="screenshot" style="width:100%;max-height:300px;"/> |
 
 ## Features
 
