@@ -7,7 +7,7 @@ export const GET: RequestHandler = async () => {
     for (const { id } of await getServers()) {
       const wg = new WGServer(id);
       const server = await wg.get();
-      const hasInterface = await wg.hasInterface();
+      const hasInterface = await wg.isUp();
 
       // If the server is up and the interface doesn't exist, start it
       if (server.status === 'up' && !hasInterface) {

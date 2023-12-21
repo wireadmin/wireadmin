@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ params }) => {
     const server = await wg.get();
 
     if (server.status === 'up') {
-      const hasInterface = await wg.hasInterface();
+      const hasInterface = await wg.isUp();
       if (!hasInterface) {
         await wg.start();
       }
@@ -143,7 +143,10 @@ export const actions: Actions = {
 
       return { ok: true };
     } catch (e) {
-      logger.error('Exception: ChangeState:', e);
+      logger.error({
+        message: 'Exception: ChangeState',
+        exception: e,
+      });
       throw error(500, 'Unhandled Exception');
     }
   },

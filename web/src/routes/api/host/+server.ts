@@ -1,14 +1,14 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import Shell from '$lib/shell';
-import 'dotenv/config';
 import logger from '$lib/logger';
+import { execaCommand } from 'execa';
+import 'dotenv/config';
 
 export const GET: RequestHandler = async () => {
   let { WG_HOST } = process.env;
 
   // if the host is not set, then we are using the server's public IP
   if (!WG_HOST) {
-    const resp = await Shell.exec('curl -s ifconfig.me', true);
+    const { stdout: resp } = await execaCommand('curl -s ifconfig.me');
     WG_HOST = resp.trim();
   }
 

@@ -3,7 +3,6 @@ import path from 'path';
 import deepmerge from 'deepmerge';
 import type { Peer, WgKey, WgServer } from '$lib/typings';
 import Network from '$lib/network';
-import Shell from '$lib/shell';
 import { WG_PATH, WG_SEVER_PATH } from '$lib/constants';
 import { dynaJoin, isJson } from '$lib/utils';
 import { getPeerConf } from '$lib/wireguard/utils';
@@ -51,8 +50,8 @@ export class WGServer {
   async stop(): Promise<boolean> {
     const server = await this.get();
 
-    if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
-      await Shell.exec(`wg-quick down wg${server.confId}`, true);
+    if (await Network.interfaceExists(`wg${server.confId}`)) {
+      await execaCommand(`wg-quick down wg${server.confId}`);
     }
 
     await this.update({ status: 'down' });
@@ -67,11 +66,14 @@ export class WGServer {
       await this.writeConfigFile(server);
     }
 
-    if (await Network.checkInterfaceExists(`wg${server.confId}`)) {
-      await Shell.exec(`wg-quick down wg${server.confId}`, true);
+    const isAlreadyUp = await this.isUp();
+    logger.debug('WGServer:Start: isAlreadyUp:', isAlreadyUp);
+    if (isAlreadyUp) {
+      logger.debug('WGServer:Start: interface already up... taking down');
+      await execaCommand(`wg-quick down wg${server.confId}`);
     }
 
-    await Shell.exec(`wg-quick up wg${server.confId}`);
+    await execaCommand(`wg-quick up wg${server.confId}`);
 
     await this.update({ status: 'up' });
     return true;
@@ -132,7 +134,7 @@ export class WGServer {
     await this.update({ confHash: getConfigHash(wg.confId) });
   }
 
-  async hasInterface(): Promise<boolean> {
+  async isUp(): Promise<boolean> {
     const server = await this.get();
     try {
       const res = await execaCommand(`wg show wg${server.confId}`);
@@ -144,7 +146,7 @@ export class WGServer {
 
   async getUsage(): Promise<WgUsage> {
     const server = await this.get();
-    const hasInterface = await this.hasInterface();
+    const hasInterface = await this.isUp();
 
     const usages: WgUsage = {
       total: { rx: 0, tx: 0 },
@@ -371,14 +373,6 @@ function resolveConfigPath(confId: number): string {
   return path.resolve(path.join(WG_PATH, `wg${confId}.conf`));
 }
 
-/**
- * This function is for checking out WireGuard server is running
- */
-async function wgCheckout(configId: number): Promise<boolean> {
-  const res = await Shell.exec(`ip link show | grep wg${configId}`, true);
-  return res.includes(`wg${configId}`);
-}
-
 export async function readWgConf(configId: number): Promise<WgServer> {
   const confPath = resolveConfigPath(configId);
   const conf = fs.readFileSync(confPath, 'utf-8');
@@ -462,7 +456,10 @@ export async function readWgConf(configId: number): Promise<WgServer> {
       reachedPeers = true;
     }
   }
-  server.status = (await wgCheckout(configId)) ? 'up' : 'down';
+
+  const hasInterface = await Network.interfaceExists(`wg${configId}`);
+  server.status = hasInterface ? 'up' : 'down';
+
   return server;
 }
 
@@ -505,9 +502,9 @@ function wgPeersStr(configId: number): string[] {
 }
 
 export async function generateWgKey(): Promise<WgKey> {
-  const privateKey = await Shell.exec('wg genkey');
-  const publicKey = await Shell.exec(`echo ${privateKey} | wg pubkey`);
-  const preSharedKey = await Shell.exec('wg genkey');
+  const { stdout: privateKey } = await execaCommand('wg genkey');
+  const { stdout: publicKey } = await execaCommand(`echo ${privateKey} | wg pubkey`);
+  const { stdout: preSharedKey } = await execaCommand('wg genkey');
   return { privateKey, publicKey, preSharedKey };
 }
 
@@ -579,10 +576,10 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   await wg.update({ confHash: getConfigHash(confId) });
 
   // to ensure interface does not exists
-  await Shell.exec(`wg-quick down wg${confId}`, true);
+  await wg.stop();
 
   // restart WireGuard
-  await Shell.exec(`wg-quick up wg${confId}`);
+  await wg.start();
 
   // return server id
   return uuid;
@@ -595,7 +592,7 @@ export async function isIPReserved(ip: string): Promise<boolean> {
 
 export async function isPortReserved(port: number): Promise<boolean> {
   const inUsePorts = [
-    await Network.getInUsePorts(),
+    await Network.inUsePorts(),
     (await getServers()).map((s) => Number(s.listen)),
   ].flat();
   return inUsePorts.includes(port);
@@ -676,7 +673,7 @@ export async function findServer(
 
 export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: string }> {
   const inet = await Network.defaultInterface();
-  const inet_address = await Shell.exec(`hostname -i | awk '{print $1}'`);
+  const { stdout: inet_address } = await execaCommand(`hostname -i | awk '{print $1}'`);
 
   const source = `${s.address}/24`;
   const wg_inet = `wg${s.confId}`;
