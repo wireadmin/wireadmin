@@ -81,7 +81,6 @@
   onDestroy(() => {
     clearInterval(interval);
   });
-
 </script>
 
 <Card>
