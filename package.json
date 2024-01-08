@@ -4,9 +4,12 @@
   "description": "",
   "scripts": {
     "dev:image": "DOCKER_BUILDKIT=1 docker build --tag wireadmin -f Dockerfile-Dev .",
-    "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up && docker compose rm -fsv"
+    "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up"
   },
   "keywords": [],
   "author": "Shahrad Elahi <https://github.com/shahradelahi>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1"
+  }
 }

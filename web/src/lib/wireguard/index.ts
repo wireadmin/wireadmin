@@ -676,11 +676,6 @@ export async function findServer(
 }
 
 export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: string }> {
-  const inet = await Network.defaultInterface();
-  const { stdout: inet_address } = await execa(`hostname -i | awk '{print $1}'`, {
-    shell: true,
-  });
-
   const source = `${s.address}/24`;
   const wg_inet = `wg${s.confId}`;
 
@@ -688,9 +683,9 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
     const up = dynaJoin([
       `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
       `iptables -A INPUT -i ${wg_inet} -s ${source} -m state --state NEW -j ACCEPT`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} --dport 53 -j DNAT --to-destination ${inet_address}:53530`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p tcp -s ${source} -j DNAT --to-destination ${inet_address}:9040`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} -j DNAT --to-destination ${inet_address}:9040`,
+      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} --dport 53 -j DNAT --to-destination 127.0.0.1:53530`,
+      `iptables -t nat -A PREROUTING -i ${wg_inet} -p tcp -s ${source} -j DNAT --to-destination 127.0.0.1:59040`,
+      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} -j DNAT --to-destination 127.0.0.1:59040`,
       `iptables -t nat -A OUTPUT -o lo -j RETURN`,
       `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
       `iptables -A OUTPUT -m state --state INVALID -j DROP`,
@@ -699,6 +694,7 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
     return { up, down: up.replace(/-A/g, '-D') };
   }
 
+  const inet = await Network.defaultInterface();
   const up = dynaJoin([
     `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
     `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,

@@ -1,16 +1,23 @@
-name: Build Docker Image
+name: Build Prerelease Image
 
 on:
-  push:
-    branches:
-      - "master"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build'
+        required: false
+
+env:
+  BUILD_PLATFORMS: linux/amd64,linux/arm64
+  IMAGE_TAG: canary-${{ github.event.inputs.tag || github.sha }}
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   ghcr-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     env:
       IMAGE_NAME: shahradelahi/wireadmin
@@ -32,15 +39,12 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ env.IMAGE_NAME }}:canary-${{ github.sha }}
+          platforms: ${{ env.BUILD_PLATFORMS }}
+          tags: ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
 
   docker-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     env:
       IMAGE_NAME: litehex/wireadmin
@@ -62,5 +66,5 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: docker.io/${{ env.IMAGE_NAME }}:canary-${{ github.sha }}
+          platforms: ${{ env.BUILD_PLATFORMS }}
+          tags: docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

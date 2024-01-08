@@ -1,16 +1,19 @@
 name: Build Docker Image
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  release:
+    types: [ created ]
+
+env:
+  BUILD_PLATFORMS: linux/amd64,linux/arm64
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   ghcr-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     env:
       IMAGE_NAME: shahradelahi/wireadmin
@@ -26,8 +29,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.PRIVATE_TOKEN }}
 
-      - name: Set Image tag
-        run: |
+      - run: |
           echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
           echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
@@ -37,7 +39,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.BUILD_PLATFORMS }}
           tags: ghcr.io/${{ env.IMAGE_NAME }}:latest,ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
 
@@ -61,8 +63,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set Image tag
-        run: |
+      - run: |
           echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
           echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
@@ -72,5 +73,5 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.BUILD_PLATFORMS }}
           tags: docker.io/${{ env.IMAGE_NAME }}:latest,docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
