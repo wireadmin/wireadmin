@@ -4,9 +4,10 @@
   import type { PageData } from './$types';
   import CreateServerDialog from './CreateServerDialog.svelte';
   import Server from './Server.svelte';
-  import { Card, CardHeader, CardTitle } from '$lib/components/ui/card';
+  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import fetchAction from '$lib/fetch-action';
   import { Empty } from '$lib/components/empty';
+  import Service from './Service.svelte';
 
   export let data: PageData;
 
@@ -49,15 +50,33 @@
         <CardHeader>
           <CardTitle>Servers</CardTitle>
         </CardHeader>
-        {#each data.servers as server}
-          <Server
-            {server}
-            on:rename={({ detail }) => {
-              handleRename(server.id.toString(), detail);
-            }}
-          />
-        {/each}
+        <CardContent>
+          {#each data.servers as server}
+            <Server
+              {server}
+              on:rename={({ detail }) => handleRename(server.id.toString(), detail)}
+            />
+          {/each}
+        </CardContent>
       {/if}
+    </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>Services</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Service name="Tor" slug="tor">
+          <svelte:fragment slot="icon">
+            <i class={'fa-solid fa-onion text-purple-700 text-xl'} />
+          </svelte:fragment>
+        </Service>
+
+        <Service name="Redis" slug="redis">
+          <svelte:fragment slot="icon">
+            <i class={'fa-solid fa-database text-red-700 text-xl'} />
+          </svelte:fragment>
+        </Service>
+      </CardContent>
     </Card>
   </div>
 </BasePage>

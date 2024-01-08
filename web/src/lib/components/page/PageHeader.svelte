@@ -1,14 +1,11 @@
 <script lang="ts">
-  import Logo from '$lib/assets/logo.png';
-  import { buttonVariants } from '$lib/components/ui/button';
-
   export let showLogout: boolean = false;
 </script>
 
 <header class={'w-full py-3 px-2'}>
   <nav class={'w-full flex items-center justify-between'}>
     <div class={'flex items-center gap-x-2 text-3xl font-medium'}>
-      <img src={Logo} alt="WireAdmin" width="40" height="40" class="max-sm:w-8" />
+      <img src={'/logo.png'} alt="WireAdmin" width="40" height="40" class="max-sm:w-8" />
       <h1 class="max-sm:text-lg">WireAdmin</h1>
     </div>
 

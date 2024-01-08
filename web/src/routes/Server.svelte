@@ -14,18 +14,21 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div class="flex items-center justify-between p-4 gap-x-4">
+<div class="flex items-center justify-between py-4 gap-x-4">
   <div class="w-full md:w-2/3 flex items-center gap-x-2">
     <div class="flex grow">
       <div
-        class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}
+        class={cn(
+          'relative w-12 aspect-square',
+          'flex items-center justify-center mr-4 ',
+          'bg-gray-200 max-md:hidden',
+          'rounded-full',
+        )}
       >
-        <i
-          class={cn(
-            server.tor ? 'fa-solid fa-onion text-purple-700' : 'fa-solid fa-server text-gray-400',
-            'text-xl',
-          )}
-        />
+        <i class={'fa-solid fa-server text-gray-400 text-xl'} />
+        {#if server.tor}
+          <i class="absolute bottom-3.5 right-2 w-3 h-3 fa-solid fa-onion text-purple-700" />
+        {/if}
       </div>
 
       <div class="h-full flex flex-col justify-between col-span-4 gap-y-1.5">
@@ -41,7 +44,7 @@
           asChild
         >
           <a href={`/${server.id}`} title="Manage the Server" class={cn({ hidden: editMode })}>
-            <span class="text-lg md:text-base hover:text-primary hover:font-medium">
+            <span class="text-lg font-medium md:text-base hover:text-primary hover:font-medium">
               {server.name}
             </span>
           </a>
@@ -52,11 +55,7 @@
       </div>
     </div>
     <div class={'flex col-span-4 justify-end'}>
-      {#if server.status === 'up'}
-        <Badge variant="success">Online</Badge>
-      {:else}
-        <Badge variant="destructive">Offline</Badge>
-      {/if}
+      <Badge variant={server.status === 'up' ? 'success' : 'destructive'} />
     </div>
   </div>
 

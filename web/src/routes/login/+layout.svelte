@@ -1,6 +1,6 @@
 <script lang="ts">
   import PageFooter from '$lib/components/page/PageFooter.svelte';
-  import Logo from '$lib/assets/logo.png';
+  import Logo from '../../../static/logo.png';
 </script>
 
 <div class={'w-full min-h-screen flex justify-center px-2 md:px-6 py-2'}>
