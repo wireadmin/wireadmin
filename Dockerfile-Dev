@@ -5,7 +5,6 @@ WORKDIR /app
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/tor /usr/local/bin/tor
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
@@ -17,6 +16,7 @@ RUN apk update && apk upgrade \
   screen vim curl bash \
   wireguard-tools \
   openssl \
+  tor \
   redis \
   # Clear APK cache
   && rm -rf /var/cache/apk/*
@@ -24,9 +24,8 @@ RUN apk update && apk upgrade \
 COPY /config/torrc /etc/tor/torrc
 COPY /config/obfs4-bridges.conf /etc/torrc.d/obfs4-bridges.conf
 
-COPY /bin /app/bin
-RUN chmod -R +x /app/bin
-ENV PATH="$PATH:/app/bin"
+COPY /bin /usr/local/bin
+RUN chmod -R +x /usr/local/bin
 
 
 FROM base AS runner
@@ -41,10 +40,10 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
-RUN mkdir -p /var/vlogs && chmod -R 600 /var/vlogs && touch /var/vlogs/web
+RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
 
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
-# run the appc
+# run the app
 EXPOSE 5173/tcp
 CMD [ "npm", "run", "dev", "--", "--host" ]

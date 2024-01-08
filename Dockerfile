@@ -5,7 +5,6 @@ WORKDIR /app
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/tor /usr/local/bin/tor
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
@@ -17,15 +16,15 @@ RUN apk update && apk upgrade \
   screen curl bash \
   wireguard-tools \
   openssl \
+  tor \
   redis \
   # Clear APK cache
   && rm -rf /var/cache/apk/*
 
 COPY /config/torrc /etc/tor/torrc
 
-COPY /bin /app/bin
-RUN chmod -R +x /app/bin
-ENV PATH="$PATH:/app/bin"
+COPY /bin /usr/local/bin
+RUN chmod -R +x /usr/local/bin
 
 COPY web/package.json web/pnpm-lock.yaml ./
 
@@ -67,7 +66,7 @@ HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
 
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
-RUN mkdir -p /var/vlogs && chmod -R 600 /var/vlogs && touch /var/vlogs/web
+RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
 
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
