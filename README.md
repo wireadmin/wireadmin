@@ -44,8 +44,8 @@ Install WireAdmin using the command line:
 
 ```bash
 docker run --rm \
- -e WG_HOST="🚨YOUR_SERVER_IP" \
- -e UI_PASSWORD="🔐ADMIN_PASSWORD" \
+ -e WG_HOST=<YOUR_SERVER_IP> \
+ -e UI_PASSWORD=<ADMIN_PASSWORD> \
  -p "3000:3000/tcp" \
  -p "51820:51820/udp" \
  -v "wireadmin-data:/data" \
