@@ -8,7 +8,6 @@ on:
         required: false
 
 env:
-  BUILD_PLATFORMS: linux/amd64,linux/arm64
   IMAGE_TAG: canary-${{ github.event.inputs.tag || github.sha }}
 
 permissions:
@@ -39,7 +38,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: ${{ env.BUILD_PLATFORMS }}
           tags: ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
 
@@ -66,5 +64,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: ${{ env.BUILD_PLATFORMS }}
           tags: docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
