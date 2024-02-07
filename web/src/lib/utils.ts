@@ -31,6 +31,10 @@ export function isObject(obj: object) {
   return Object.prototype.toString.call(obj) === '[object Object]';
 }
 
+export async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Private IP Address Identifier in Regular Expression
  *

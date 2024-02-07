@@ -70,12 +70,6 @@
             <i class={'fa-solid fa-onion text-purple-700 text-xl'} />
           </svelte:fragment>
         </Service>
-
-        <Service name="Redis" slug="redis">
-          <svelte:fragment slot="icon">
-            <i class={'fa-solid fa-database text-red-700 text-xl'} />
-          </svelte:fragment>
-        </Service>
       </CardContent>
     </Card>
   </div>

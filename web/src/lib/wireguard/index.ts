@@ -4,12 +4,12 @@ import deepmerge from 'deepmerge';
 import type { Peer, WgKey, WgServer } from '$lib/typings';
 import Network from '$lib/network';
 import { WG_PATH, WG_SEVER_PATH } from '$lib/constants';
-import { dynaJoin, isJson } from '$lib/utils';
+import { dynaJoin, isJson, sleep } from '$lib/utils';
 import { getPeerConf } from '$lib/wireguard/utils';
 import logger from '$lib/logger';
 import { sha256 } from '$lib/hash';
 import { fsAccess } from '$lib/fs-extra';
-import { getClient } from '$lib/redis';
+import { client } from '$lib/storage';
 import { execa } from 'execa';
 
 export class WGServer {
@@ -17,30 +17,42 @@ export class WGServer {
   readonly peers: WGPeers;
 
   constructor(serverId: string) {
-    if (!serverId) throw new Error('serverId is required');
+    if (!serverId) {
+      throw new Error('WGServer: id is required');
+    }
 
-    if (!WGServer.exists(serverId)) throw new Error('server does not exists');
+    if (!WGServer.exists(serverId)) {
+      throw new Error('WGServer: server not found');
+    }
 
     this.id = serverId;
     this.peers = new WGPeers(this);
   }
 
-  static async exists(id: string): Promise<boolean> {
-    const servers = await getServers();
-    return servers.some((s) => s.id === id);
+  static exists(id: string): boolean {
+    const serverIds = getServers().map((s) => s.id);
+
+    logger.debug({
+      message: `WGServer:Exists: checking for server with id: ${id}`,
+      servers: serverIds,
+    });
+
+    return serverIds.includes(id);
   }
 
   async get(): Promise<WgServer> {
     if (!fsAccess(WG_PATH)) {
+      logger.debug('WGServer: get: creating wg path');
       fs.mkdirSync(WG_PATH, { recursive: true, mode: 0o600 });
     }
 
     const server = await findServer(this.id);
     if (!server) {
-      throw new Error('server not found');
+      throw new Error('WGServer: get: server not found');
     }
 
     if (!fsAccess(resolveConfigPath(server.confId))) {
+      logger.debug('WGServer: get: creating config file');
       await this.writeConfigFile(server);
     }
 
@@ -83,24 +95,19 @@ export class WGServer {
     const server = await this.get();
 
     await this.stop();
+
     if (wgConfExists(server.confId)) {
+      logger.debug('WGServer:Remove: removing config file');
       fs.unlinkSync(resolveConfigPath(server.confId));
     }
 
     const index = await findServerIndex(this.id);
     if (typeof index !== 'number') {
-      logger.warn('findServerIndex: index not found');
+      logger.warn('WGServer:Remove: server index not found');
       return true;
     }
 
-    const client = getClient();
-    const element = await client.lindex(WG_SEVER_PATH, index);
-    if (!element) {
-      logger.warn('remove: element not found');
-      return true;
-    }
-
-    await client.lrem(WG_SEVER_PATH, 1, element);
+    client.ldel(WG_SEVER_PATH, index);
 
     return true;
   }
@@ -110,12 +117,14 @@ export class WGServer {
 
     const index = await findServerIndex(this.id);
     if (typeof index !== 'number') {
-      logger.warn('findServerIndex: index not found');
+      logger.warn('WGServer:Update: server index not found');
       return true;
     }
 
-    const client = getClient();
-    const res = await client.lset(
+    console.log('WGServer:Update: updating server at index:', index);
+    console.log(client.lrange(WG_SEVER_PATH, 0, -1));
+
+    client.lset(
       WG_SEVER_PATH,
       index,
       JSON.stringify({
@@ -125,7 +134,7 @@ export class WGServer {
       }),
     );
 
-    return res === 'OK';
+    return true;
   }
 
   async writeConfigFile(wg: WgServer): Promise<void> {
@@ -154,7 +163,7 @@ export class WGServer {
     };
 
     if (!hasInterface) {
-      logger.debug('GetUsage: interface does not exists');
+      logger.debug('WGServer: GetUsage: interface does not exists');
       return usages;
     }
 
@@ -181,7 +190,7 @@ export class WGServer {
   static async getFreePeerIp(serverId: string): Promise<string | undefined> {
     const server = await findServer(serverId);
     if (!server) {
-      logger.error('GetFreePeerIP: no server found');
+      logger.error('WGSerevr: GetFreePeerIP: no server found');
       return undefined;
     }
 
@@ -196,7 +205,7 @@ export class WGServer {
       }
     }
 
-    logger.error('GetFreePeerIP: no free ip found');
+    logger.error('WGServer: GetFreePeerIP: no free ip found');
     return undefined;
   }
 }
@@ -239,12 +248,11 @@ class WGPeers {
 
     const index = await findServerIndex(this.server.id);
     if (typeof index !== 'number') {
-      logger.warn('findServerIndex: index not found');
+      logger.warn('WGPeers:Add: server index not found');
       return true;
     }
 
-    const client = getClient();
-    await client.lset(
+    client.lset(
       WG_SEVER_PATH,
       index,
       JSON.stringify({
@@ -263,16 +271,15 @@ class WGPeers {
 
   async remove(publicKey: string): Promise<boolean> {
     const server = await this.server.get();
-    const peers = await wgPeersStr(server.confId);
+    const peers = wgPeersStr(server.confId);
 
     const index = await findServerIndex(this.server.id);
     if (typeof index !== 'number') {
-      logger.warn('findServerIndex: index not found');
+      logger.warn('WGPeers:Remove: server index not found');
       return true;
     }
 
-    const client = getClient();
-    await client.lset(
+    client.lset(
       WG_SEVER_PATH,
       index,
       JSON.stringify({
@@ -283,7 +290,7 @@ class WGPeers {
 
     const peerIndex = peers.findIndex((p) => p.includes(`PublicKey = ${publicKey}`));
     if (peerIndex === -1) {
-      logger.warn('removePeer: no peer found');
+      logger.warn('WGPeers:Remove: peer not found');
       return false;
     }
 
@@ -307,7 +314,7 @@ class WGPeers {
 
     const index = await findServerIndex(this.server.id);
     if (typeof index !== 'number') {
-      logger.warn('findServerIndex: index not found');
+      logger.warn('WGPeers:Update: server index not found');
       return true;
     }
 
@@ -316,8 +323,7 @@ class WGPeers {
       return deepmerge(p, update);
     });
 
-    const client = getClient();
-    await client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }));
+    client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }));
     await this.storePeers(publicKey, updatedPeers);
 
     if (server.status === 'up') {
@@ -336,14 +342,16 @@ class WGPeers {
   async generateConfig(peerId: string): Promise<string | undefined> {
     const server = await findServer(this.server.id);
     if (!server) {
-      logger.error('generatePeerConfig: server not found');
+      logger.error('WGPeers:GeneratePeerConfig: server not found');
       return undefined;
     }
+
     const peer = server.peers.find((p) => p.id === peerId);
     if (!peer) {
-      logger.error('generatePeerConfig: peer not found');
+      logger.error('WGPeers:GeneratePeerConfig: peer not found');
       return undefined;
     }
+
     return await getPeerConf({
       ...peer,
       serverPublicKey: server.publicKey,
@@ -487,11 +495,14 @@ async function syncServers(): Promise<boolean> {
   // read all confs
   const servers = await Promise.all(confs.map((f) => readWgConf(parseInt(f.match(reg)![1]))));
 
-  const client = getClient();
   // remove old servers
-  await client.del(WG_SEVER_PATH);
+  client.del(WG_SEVER_PATH);
+
   // save all servers to redis
-  await client.lpush(WG_SEVER_PATH, ...servers.map((s) => JSON.stringify(s)));
+  client.lpush(
+    WG_SEVER_PATH,
+    servers.map((s) => JSON.stringify(s)),
+  );
 
   return true;
 }
@@ -519,15 +530,18 @@ interface GenerateWgServerParams {
   port: number;
   dns?: string;
   mtu?: number;
-  insertDb?: boolean;
 }
 
 export async function generateWgServer(config: GenerateWgServerParams): Promise<string> {
   const { privateKey, publicKey } = await generateWgKey();
 
-  // inside redis create a config list
+  // Inside storage create a config list
   const confId = await getNextFreeConfId();
   const uuid = crypto.randomUUID();
+
+  logger.debug(
+    `WireGuard: GenerateWgServer: creating server with id: ${uuid} and confId: ${confId}`,
+  );
 
   let server: WgServer = {
     id: uuid,
@@ -550,7 +564,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
     status: 'up',
   };
 
-  // check if address or port are already reserved
+  // Check if address or port is already reserved
   if (await isIPReserved(config.address)) {
     throw new Error(`Address ${config.address} is already reserved!`);
   }
@@ -565,17 +579,20 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   server.postDown = iptables.down;
 
   // save server config
-  if (false !== config.insertDb) {
-    const client = getClient();
-    await client.lpush(WG_SEVER_PATH, JSON.stringify(server));
-  }
+  logger.debug('WireGuard: GenerateWgServer: saving server to storage');
+  logger.debug(server);
+  client.lpush(WG_SEVER_PATH, JSON.stringify(server));
 
   const CONFIG_PATH = resolveConfigPath(confId);
 
   // save server config to disk
+  logger.debug('WireGuard: GenerateWgServer: writing config file');
   fs.writeFileSync(CONFIG_PATH, await genServerConf(server), { mode: 0o600 });
 
+  await sleep(50);
+
   // updating hash of the config
+  logger.debug('WireGuard: GenerateWgServer: updating config hash');
   const wg = new WGServer(uuid);
   await wg.update({ confHash: getConfigHash(confId) });
 
@@ -590,20 +607,17 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
 }
 
 export async function isIPReserved(ip: string): Promise<boolean> {
-  const addresses = (await getServers()).map((s) => s.address);
+  const addresses = getServers().map((s) => s.address);
   return addresses.includes(ip);
 }
 
 export async function isPortReserved(port: number): Promise<boolean> {
-  const inUsePorts = [
-    await Network.inUsePorts(),
-    (await getServers()).map((s) => Number(s.listen)),
-  ].flat();
+  const inUsePorts = [await Network.inUsePorts(), getServers().map((s) => Number(s.listen))].flat();
   return inUsePorts.includes(port);
 }
 
 export async function isConfigIdReserved(id: number): Promise<boolean> {
-  const ids = (await getServers()).map((s) => s.confId);
+  const ids = getServers().map((s) => s.confId);
   return ids.includes(id);
 }
 
@@ -619,6 +633,7 @@ export async function getNextFreeConfId(): Promise<number> {
 
 export function getConfigHash(confId: number): string | undefined {
   if (!wgConfExists(confId)) {
+    logger.debug('WireGuard: GetConfigHash: config does not exists. ConfId:', confId);
     return undefined;
   }
 
@@ -645,10 +660,21 @@ export function maxConfId(): number {
   return Math.max(0, ...ids);
 }
 
-export async function getServers(): Promise<WgServer[]> {
-  const client = getClient();
-  const rawServers = await client.lrange(WG_SEVER_PATH, 0, -1);
-  return rawServers.map((s) => JSON.parse(s));
+export function getServers(): WgServer[] {
+  const rawServers = (client.list(WG_SEVER_PATH) || []) as string[];
+  return rawServers.map((s) => {
+    if (isJson(s)) {
+      return JSON.parse(s);
+    }
+
+    if (typeof s === 'object') {
+      return s;
+    }
+
+    logger.warn('WireGuard: GetServers: invalid server found');
+
+    return null;
+  });
 }
 
 export async function findServerIndex(id: string): Promise<number | undefined> {

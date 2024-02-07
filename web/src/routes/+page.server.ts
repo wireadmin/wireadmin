@@ -15,7 +15,7 @@ import logger from '$lib/logger';
 
 export const load: PageServerLoad = async () => {
   return {
-    servers: (await getServers()).map((s) => s),
+    servers: getServers(),
     form: superValidate(CreateServerSchema),
   };
 };

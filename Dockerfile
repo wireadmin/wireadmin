@@ -15,11 +15,11 @@ RUN apk update && apk upgrade \
   iproute2 iptables net-tools \
   screen curl bash \
   wireguard-tools \
-  openssl \
-  tor \
-  redis \
+  tor &&\
+  # NPM packages
+  npm install -g @litehex/node-checksum &&\
   # Clear APK cache
-  && rm -rf /var/cache/apk/*
+  rm -rf /var/cache/apk/*
 
 COPY /config/torrc /etc/tor/torrc
 

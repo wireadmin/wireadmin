@@ -15,11 +15,11 @@ RUN apk update && apk upgrade \
   iproute2 iptables net-tools \
   screen vim curl bash \
   wireguard-tools \
-  openssl \
-  tor \
-  redis \
+  tor &&\
+  # NPM packages
+  npm install -g @litehex/node-checksum &&\
   # Clear APK cache
-  && rm -rf /var/cache/apk/*
+  rm -rf /var/cache/apk/*
 
 COPY /config/torrc /etc/tor/torrc
 COPY /config/obfs4-bridges.conf /etc/torrc.d/obfs4-bridges.conf
@@ -33,6 +33,9 @@ FROM base AS runner
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
+
+ENV NODE_ENV=development
+ENV LOG_LEVEL=debug
 
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
