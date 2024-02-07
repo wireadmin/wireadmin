@@ -11,7 +11,7 @@ const LOG_COLORS = process.env.LOG_COLORS || 'true';
 const options: LoggerOptions = {
   level: LOG_LEVEL,
   customLevels: {
-    http: 10,
+    trace: 10,
     info: 30,
     debug: 35,
     warn: 40,
