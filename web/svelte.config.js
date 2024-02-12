@@ -15,6 +15,7 @@ const config = {
     alias: {
       $lib: './src/lib',
     },
+    csrf: false,
   },
 };
 
