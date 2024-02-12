@@ -11,6 +11,7 @@ import { sha256 } from '$lib/hash';
 import { fsAccess } from '$lib/fs-extra';
 import { client } from '$lib/storage';
 import { execa } from 'execa';
+import { ip } from 'node-netkit';
 
 export class WGServer {
   readonly id: string;
@@ -32,12 +33,16 @@ export class WGServer {
   static exists(id: string): boolean {
     const serverIds = getServers().map((s) => s.id);
 
-    logger.debug({
-      message: `WGServer:Exists: checking for server with id: ${id}`,
-      servers: serverIds,
-    });
+    const exists = serverIds.includes(id);
 
-    return serverIds.includes(id);
+    if (!exists) {
+      logger.debug({
+        message: `WGServer: Exists: server by id of ${id} does not exists`,
+        servers: serverIds,
+      });
+    }
+
+    return exists;
   }
 
   async get(): Promise<WgServer> {
@@ -62,11 +67,16 @@ export class WGServer {
   async stop(): Promise<boolean> {
     const server = await this.get();
 
-    if (await Network.interfaceExists(`wg${server.confId}`)) {
-      await execa(`wg-quick down wg${server.confId}`, { shell: true });
+    const iface = `wg${server.confId}`;
+
+    if (await Network.interfaceExists(iface)) {
+      await execa(`wg-quick down ${iface}`, { shell: true });
     }
 
     await this.update({ status: 'down' });
+
+    // TODO: Drop any iptables rules related the interface
+
     return true;
   }
 
@@ -79,7 +89,6 @@ export class WGServer {
     }
 
     const isAlreadyUp = await this.isUp();
-    logger.debug('WGServer:Start: isAlreadyUp:', isAlreadyUp);
     if (isAlreadyUp) {
       logger.debug('WGServer:Start: interface already up... taking down');
       await execa(`wg-quick down wg${server.confId}`, { shell: true });
@@ -120,9 +129,6 @@ export class WGServer {
       logger.warn('WGServer:Update: server index not found');
       return true;
     }
-
-    console.log('WGServer:Update: updating server at index:', index);
-    console.log(client.lrange(WG_SEVER_PATH, 0, -1));
 
     client.lset(
       WG_SEVER_PATH,
@@ -703,15 +709,23 @@ export async function findServer(
 
 export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: string }> {
   const source = `${s.address}/24`;
+
+  const route = await ip.route.defaultRoute();
   const wg_inet = `wg${s.confId}`;
+
+  if (!route) {
+    throw new Error('No default route found');
+  }
+
+  const { stdout: inet_address } = await execa(`hostname -i | awk '{print $1}'`, { shell: true });
 
   if (s.tor) {
     const up = dynaJoin([
       `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
       `iptables -A INPUT -i ${wg_inet} -s ${source} -m state --state NEW -j ACCEPT`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} --dport 53 -j DNAT --to-destination 127.0.0.1:53530`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p tcp -s ${source} -j DNAT --to-destination 127.0.0.1:59040`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} -j DNAT --to-destination 127.0.0.1:59040`,
+      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} --dport 53 -j DNAT --to-destination ${inet_address}:53530`,
+      `iptables -t nat -A PREROUTING -i ${wg_inet} -p tcp -s ${source} -j DNAT --to-destination ${inet_address}:59040`,
+      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} -j DNAT --to-destination ${inet_address}:59040`,
       `iptables -t nat -A OUTPUT -o lo -j RETURN`,
       `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
       `iptables -A OUTPUT -m state --state INVALID -j DROP`,
@@ -720,9 +734,8 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
     return { up, down: up.replace(/-A/g, '-D') };
   }
 
-  const inet = await Network.defaultInterface();
   const up = dynaJoin([
-    `iptables -t nat -A POSTROUTING -s ${source} -o ${inet} -j MASQUERADE`,
+    `iptables -t nat -A POSTROUTING -s ${source} -o ${route.dev} -j MASQUERADE`,
     `iptables -A INPUT -p udp -m udp --dport ${s.listen} -j ACCEPT`,
     `iptables -A INPUT -p tcp -m tcp --dport ${s.listen} -j ACCEPT`,
     `iptables -A FORWARD -i ${wg_inet} -j ACCEPT`,

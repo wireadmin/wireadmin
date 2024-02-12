@@ -4,6 +4,12 @@ set -e
 TOR_CONFIG="/etc/tor/torrc"
 ENV_FILE="/app/.env"
 
+log() {
+  local level=$1
+  local message=$2
+  echo -e "\n[$(date +"%Y-%m-%d %H:%M:%S")] [$level] $message"
+}
+
 to_camel_case() {
   echo "${1}" | awk -F_ '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1' OFS=""
 }
@@ -11,6 +17,8 @@ to_camel_case() {
 generate_tor_config() {
   # IP address of the container
   local inet_address="$(hostname -i | awk '{print $1}')"
+
+  log "notice" "Using the following IP address for the Tor network: $inet_address"
 
   sed -i "s/{{INET_ADDRESS}}/$inet_address/g" "${TOR_CONFIG}"
 
@@ -42,6 +50,8 @@ generate_tor_config() {
   sed -i '/^[^ ]* $/d' "${TOR_CONFIG}"
   # Remove double empty lines
   sed -i '/^$/N;/^\n$/D' "${TOR_CONFIG}"
+
+  log "notice" "Tor configuration file has been generated"
 }
 
 echo "                                                   "
@@ -73,12 +83,12 @@ HASHED_PASSWORD=$(printf "%s" "${UI_PASSWORD}" | od -A n -t x1 | tr -d ' \n')
 EOF
   unset UI_PASSWORD
 else
-  echo "[error] no password set for the UI"
+  log "error" "no password set for the UI"
   exit 1
 fi
 
 if [ -z "$WG_HOST" ]; then
-  echo "[error] the WG_HOST environment variable is not set"
+log "error" "the WG_HOST environment variable is not set"
   exit 1
 fi
 

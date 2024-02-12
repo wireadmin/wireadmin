@@ -1,5 +1,4 @@
 import { execa } from 'execa';
-import logger from '$lib/logger';
 import { ip } from 'node-netkit';
 
 export default class Network {
@@ -18,7 +17,6 @@ export default class Network {
       const { stdout: o } = await execa(`ip link show | grep ${inet}`, { shell: true });
       return o.trim() !== '';
     } catch (e) {
-      logger.debug('Interface does not exist:', inet);
       return false;
     }
   }

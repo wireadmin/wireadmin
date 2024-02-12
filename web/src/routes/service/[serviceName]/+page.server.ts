@@ -8,16 +8,9 @@ const services: Record<string, Service> = {
   tor: {
     name: 'Tor',
     command: {
-      restart: 'screen -L -Logfile /var/vlogs/tor -dmS "tor" tor -f /etc/tor/torrc',
+      start: 'screen -L -Logfile /var/vlogs/tor -dmS "tor" tor -f /etc/tor/torrc',
+      stop: 'pkill tor',
       logs: 'logs tor',
-    },
-  },
-  redis: {
-    name: 'Redis',
-    command: {
-      restart:
-        'screen -L -Logfile /var/vlogs/redis -dmS "redis" bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"',
-      logs: 'logs redis',
     },
   },
 };
@@ -25,7 +18,8 @@ const services: Record<string, Service> = {
 interface Service {
   name: string;
   command: {
-    restart: string;
+    start: string;
+    stop: string;
     logs: string;
   };
 }
@@ -40,6 +34,25 @@ export const load: PageServerLoad = async ({ params }) => {
     title: services[params.serviceName].name,
   };
 };
+
+function restartService(serviceName: string) {
+  // Stop
+  const { exitCode: stopExitCode } = execa(services[serviceName].command.stop, { shell: true });
+
+  // Start
+  const { exitCode: startExitCode } = execa(services[serviceName].command.start, { shell: true });
+
+  logger.info({
+    message: `Restarted ${serviceName} service`,
+    stopExitCode,
+    startExitCode,
+  });
+
+  return {
+    stopExitCode,
+    startExitCode,
+  };
+}
 
 export const actions: Actions = {
   clearLogs: async ({ request, params }) => {
@@ -68,8 +81,8 @@ export const actions: Actions = {
     const { serviceName } = params;
 
     try {
-      await execa(services[serviceName!].command.restart, { shell: true });
-      return {};
+      const { stopExitCode, startExitCode } = restartService(serviceName!);
+      return { stopExitCode, startExitCode };
     } catch (e) {
       logger.error(e);
       throw error(500, 'Unhandled Exception');
