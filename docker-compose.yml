@@ -4,16 +4,19 @@ services:
     environment:
       # ⚠️ Required:
       # Make sure change this to your host's public address
-      - WG_HOST=raspberrypi.local
+      - WG_HOST=localhost
+      # ⚠️ Required:
+      # You can use `openssl rand -base64 8` to generate a secure password
+      - UI_PASSWORD=super-secret-password
 
-    image: shahradel/wireadmin
-    container_name: wireadmin
+    image: wireadmin
+    container_name: litehex/wireadmin
+    restart: unless-stopped
     volumes:
-      - redis-data:/data
+      - persist-data:/data
     ports:
       - "51820:51820/udp"
       - "3000:3000/tcp"
-    restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -22,5 +25,5 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
 
 volumes:
-  redis-data:
+  persist-data:
     driver: local

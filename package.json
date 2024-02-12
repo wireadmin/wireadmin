@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev:image": "DOCKER_BUILDKIT=1 docker build --tag wireadmin -f Dockerfile-Dev .",
-    "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up"
+    "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "dev:image": "docker buildx build --tag wireadmin -f Dockerfile-Dev .",
+    "build": "docker buildx build --tag wireadmin .",
+    "start": "docker compose rm -fsv && docker compose -f docker-compose.yml up"
   },
   "keywords": [],
   "author": "Shahrad Elahi <https://github.com/shahradelahi>",

@@ -9,9 +9,9 @@ COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
 # Update and upgrade packages
-RUN apk update && apk upgrade \
+RUN apk update && apk upgrade &&\
   # Install required packages
-  && apk add -U --no-cache \
+  apk add -U --no-cache \
   iproute2 iptables net-tools \
   screen curl bash \
   wireguard-tools \
@@ -23,14 +23,21 @@ RUN apk update && apk upgrade \
 
 COPY /config/torrc /etc/tor/torrc
 
+# Copy user scripts
 COPY /bin /usr/local/bin
 RUN chmod -R +x /usr/local/bin
 
 COPY web/package.json web/pnpm-lock.yaml ./
 
+# Base env
+ENV ORIGIN=http://127.0.0.1:3000
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=x-forwarded-host
+
 
 FROM base AS build
 
+# Setup Pnpm - Pnpm only used for build stage
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -51,25 +58,30 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM base AS release
 
+# Copy the goods from the build stage
 COPY --from=build /tmp/node_modules node_modules
 COPY --from=build /tmp/build build
 
 ENV NODE_ENV=production
 ENV LOG_LEVEL=error
 
+# Setup entrypoint
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
+# Healthcheck
 HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
 
+# Fix permissions
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
 RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
 
+# Volumes
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
-# run the app
+# Run the app
 EXPOSE 3000/tcp
 CMD [ "npm", "run", "start" ]

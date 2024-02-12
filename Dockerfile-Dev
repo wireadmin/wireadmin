@@ -9,9 +9,9 @@ COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin
 COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
 
 # Update and upgrade packages
-RUN apk update && apk upgrade \
+RUN apk update && apk upgrade &&\
   # Install required packages
-  && apk add -U --no-cache \
+  apk add -U --no-cache \
   iproute2 iptables net-tools \
   screen vim curl bash \
   wireguard-tools \
@@ -21,21 +21,30 @@ RUN apk update && apk upgrade \
   # Clear APK cache
   rm -rf /var/cache/apk/*
 
+# Copy Tor Configs
 COPY /config/torrc /etc/tor/torrc
 COPY /config/obfs4-bridges.conf /etc/torrc.d/obfs4-bridges.conf
 
+# Copy user scripts
 COPY /bin /usr/local/bin
 RUN chmod -R +x /usr/local/bin
 
-
-FROM base AS runner
-
+# Setup Pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
+# Base env
+ENV ORIGIN=http://127.0.0.1:5173,http://localhost:5173
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=x-forwarded-host
+
+
+FROM base AS runner
+
 ENV NODE_ENV=development
 ENV LOG_LEVEL=debug
+
 
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
