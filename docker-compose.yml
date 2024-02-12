@@ -9,7 +9,7 @@ services:
       # You can use `openssl rand -base64 8` to generate a secure password
       - UI_PASSWORD=super-secret-password
 
-    image: litehex/wireadmin
+    image: wireadmin
     container_name: wireadmin
     restart: unless-stopped
     volumes:

@@ -45,17 +45,20 @@ FROM base AS runner
 ENV NODE_ENV=development
 ENV LOG_LEVEL=debug
 
+ENV VERSION=0.0.0-dev
 
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
+# Fix permissions
 RUN mkdir -p /data && chmod 700 /data
 RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
 RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
 
+# Volumes
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
-# run the app
+# Run the app
 EXPOSE 5173/tcp
 CMD [ "npm", "run", "dev", "--", "--host" ]

@@ -7,7 +7,7 @@ ENV_FILE="/app/.env"
 log() {
   local level=$1
   local message=$2
-  echo -e "\n[$(date +"%Y-%m-%d %H:%M:%S")] [$level] $message"
+  echo "[$(date +"%Y-%m-%d %H:%M:%S")] [$level] $message"
 }
 
 to_camel_case() {
@@ -17,8 +17,6 @@ to_camel_case() {
 generate_tor_config() {
   # IP address of the container
   local inet_address="$(hostname -i | awk '{print $1}')"
-
-  log "notice" "Using the following IP address for the Tor network: $inet_address"
 
   sed -i "s/{{INET_ADDRESS}}/$inet_address/g" "${TOR_CONFIG}"
 
@@ -39,7 +37,10 @@ generate_tor_config() {
   # any file in it, adding them to the torrc file
   local torrc_files=$(find /etc/torrc.d -type f -name "*.conf")
   if [ -n "${torrc_files}" ]; then
+    log "notice" "Found torrc.d folder with configuration files"
+
     for file in ${torrc_files}; do
+      log "notice" "Adding $file to the main torrc file"
       cat "$file" >>"${TOR_CONFIG}"
     done
   fi
@@ -95,10 +96,6 @@ fi
 # Remove duplicated envs
 awk -F= '!a[$1]++' "${ENV_FILE}" >"/tmp/$(basename "${ENV_FILE}")" &&
   mv "/tmp/$(basename "${ENV_FILE}")" "${ENV_FILE}"
-
-# Starting Redis server in detached mode
-screen -L -Logfile /var/vlogs/redis -dmS "redis" \
-  bash -c "redis-server --port 6479 --daemonize no --dir /data --appendonly yes"
 
 # Generate Tor configuration
 generate_tor_config

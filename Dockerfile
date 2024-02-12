@@ -82,6 +82,10 @@ RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
 # Volumes
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
+# Overwrite package version
+ARG VERSION=0.0.0-canary
+RUN node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('/app/package.json')); pkg.version = process.env.VERSION; fs.writeFileSync('/app/package.json', JSON.stringify(pkg, null, 2));"
+
 # Run the app
 EXPOSE 3000/tcp
 CMD [ "npm", "run", "start" ]

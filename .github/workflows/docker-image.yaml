@@ -5,10 +5,16 @@ on:
     inputs:
       tag:
         description: 'Tag to build'
-        required: false
+        required: true
+
+##
+# Invoke:
+#   gh workflow run "Build Prerelease Image" -f tag=2.0.0-canary.0
+##
 
 env:
-  IMAGE_TAG: canary-${{ github.event.inputs.tag || github.sha }}
+  IMAGE_TAG: ${{ github.event.inputs.tag }}
+  BUILD_PLATFORMS: linux/amd64,linux/arm64
 
 permissions:
   contents: read
@@ -38,6 +44,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          args: VERSION=${{ env.IMAGE_TAG }}
           tags: ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
 
@@ -64,4 +71,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          platforms: ${{ env.BUILD_PLATFORMS }}
+          args: VERSION=${{ env.IMAGE_TAG }}
           tags: docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

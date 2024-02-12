@@ -1,7 +1,6 @@
 {
   "name": "wireadmin",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.0-dev",
   "scripts": {
     "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
     "dev:image": "docker buildx build --tag wireadmin -f Dockerfile-Dev .",
