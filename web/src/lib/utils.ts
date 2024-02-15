@@ -16,12 +16,13 @@ export function isBetween(v: any, n1: number, n2: number): boolean {
   return n1 <= n && n >= n2;
 }
 
-export function isJson(str: string | object): boolean {
-  if (typeof str === 'object' && isObject(str)) {
-    return true;
+export function isJson(data: any): boolean {
+  if (typeof data !== 'string') {
+    return false;
   }
+
   try {
-    return typeof str === 'string' && JSON.parse(str);
+    return !!JSON.parse(data);
   } catch (ex) {
     return false;
   }

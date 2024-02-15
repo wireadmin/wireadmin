@@ -130,15 +130,11 @@ export class WGServer {
       return true;
     }
 
-    client.lset(
-      WG_SEVER_PATH,
-      index,
-      JSON.stringify({
-        ...deepmerge(server, update),
-        peers: update?.peers || server?.peers || [],
-        updatedAt: new Date().toISOString(),
-      }),
-    );
+    client.lset(WG_SEVER_PATH, index, {
+      ...deepmerge(server, update),
+      peers: update?.peers || server?.peers || [],
+      updatedAt: new Date().toISOString(),
+    });
 
     return true;
   }
@@ -258,14 +254,10 @@ class WGPeers {
       return true;
     }
 
-    client.lset(
-      WG_SEVER_PATH,
-      index,
-      JSON.stringify({
-        ...server,
-        peers: [...server.peers, peer],
-      }),
-    );
+    client.lset(WG_SEVER_PATH, index, {
+      ...server,
+      peers: [...server.peers, peer],
+    });
 
     if (server.status === 'up') {
       await this.server.stop();
@@ -285,14 +277,10 @@ class WGPeers {
       return true;
     }
 
-    client.lset(
-      WG_SEVER_PATH,
-      index,
-      JSON.stringify({
-        ...server,
-        peers: server.peers.filter((p) => p.publicKey !== publicKey),
-      }),
-    );
+    client.lset(WG_SEVER_PATH, index, {
+      ...server,
+      peers: server.peers.filter((p) => p.publicKey !== publicKey),
+    });
 
     const peerIndex = peers.findIndex((p) => p.includes(`PublicKey = ${publicKey}`));
     if (peerIndex === -1) {
@@ -329,7 +317,7 @@ class WGPeers {
       return deepmerge(p, update);
     });
 
-    client.lset(WG_SEVER_PATH, index, JSON.stringify({ ...server, peers: updatedPeers }));
+    client.lset(WG_SEVER_PATH, index, { ...server, peers: updatedPeers });
     await this.storePeers(publicKey, updatedPeers);
 
     if (server.status === 'up') {
@@ -505,10 +493,7 @@ async function syncServers(): Promise<boolean> {
   client.del(WG_SEVER_PATH);
 
   // save all servers to redis
-  client.lpush(
-    WG_SEVER_PATH,
-    servers.map((s) => JSON.stringify(s)),
-  );
+  client.lpush(WG_SEVER_PATH, servers);
 
   return true;
 }
@@ -587,7 +572,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   // save server config
   logger.debug('WireGuard: GenerateWgServer: saving server to storage');
   logger.debug(server);
-  client.lpush(WG_SEVER_PATH, JSON.stringify(server));
+  client.lpush(WG_SEVER_PATH, server);
 
   const CONFIG_PATH = resolveConfigPath(confId);
 
@@ -685,7 +670,7 @@ export function getServers(): WgServer[] {
 
 export async function findServerIndex(id: string): Promise<number | undefined> {
   let index = 0;
-  const servers = await getServers();
+  const servers = getServers();
   for (const s of servers) {
     if (s.id === id) {
       return index;
@@ -699,7 +684,7 @@ export async function findServer(
   id: string | undefined,
   hash?: string,
 ): Promise<WgServer | undefined> {
-  const servers = await getServers();
+  const servers = getServers();
   return id
     ? servers.find((s) => s.id === id)
     : hash && isJson(hash)
