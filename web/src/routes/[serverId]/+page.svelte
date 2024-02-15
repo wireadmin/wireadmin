@@ -83,124 +83,134 @@
   });
 </script>
 
-<Card>
-  <CardHeader>
-    <CardTitle>Server</CardTitle>
-  </CardHeader>
+<div class="flex items-center gap-2 py-4 px-2 leading-none">
+  <a
+    href="/"
+    title="Home"
+    class="space-x-1 font-bold text-sm text-primary hover:text-primary/80 tracking-tight"
+  >
+    <i class="fa-solid fa-chevron-left"></i>
+    <span> Back to Home </span>
+  </a>
+  <i class="fa-regular fa-slash-forward"></i>
+  <span class="mb-0.5"> {data.server.name} </span>
+</div>
 
-  <CardContent>
-    <DetailRow label={'Name'}>
-      <CopiableText value={data.server.name}>
-        {data.server.name}
-      </CopiableText>
-    </DetailRow>
 
-    {#if data.server.tor}
-      <DetailRow label={'Mode'}>
-        <Badge variant="tor">Tor</Badge>
-      </DetailRow>
-    {/if}
+<div class="space-y-3.5">
+  <Card>
+    <CardHeader>
+      <CardTitle>Server</CardTitle>
+    </CardHeader>
 
-    <DetailRow label={'IP address'}>
-      <pre> {data.server.address}/24 </pre>
-    </DetailRow>
-
-    <DetailRow label={'Listen Port'}>
-      <pre> {data.server.listen} </pre>
-    </DetailRow>
-
-    <DetailRow label={'Total Usage'}>
-      <div class="flex items-center gap-3 text-sm">
-        <div class="flex items-center gap-x-1.5">
-          <i class="fas fa-arrow-up text-gray-500"></i>
-          <span>{prettyBytes(data.usage.total.tx)}</span>
-        </div>
-        <div class="flex items-center gap-x-1.5">
-          <i class="fas fa-arrow-down text-gray-500"></i>
-          <span>{prettyBytes(data.usage.total.rx)}</span>
-        </div>
-      </div>
-    </DetailRow>
-
-    <DetailRow label={'Status'}>
-      <Badge variant={data.server.status === 'up' ? 'success' : 'destructive'} />
-    </DetailRow>
-
-    <DetailRow label={'Public Key'}>
-      <CopiableText value={data.server.publicKey}>
-        <MiddleEllipsis content={data.server.publicKey} maxLength={12} />
-      </CopiableText>
-    </DetailRow>
-  </CardContent>
-
-  <CardFooter class="flex flex-wrap items-center gap-2">
-    {#if data.server.status === 'up'}
-      <Button
-        variant="outline"
-        class="max-md:w-full"
-        size="sm"
-        on:click={() => {
-          handleChangeState('restart');
-        }}>Restart</Button
-      >
-      <Button
-        variant="destructive"
-        class="max-md:w-full"
-        size="sm"
-        on:click={() => {
-          handleChangeState('stop');
-        }}>Stop</Button
-      >
-    {:else}
-      <Button
-        variant="success"
-        class="max-md:w-full bg-green-500"
-        size="sm"
-        on:click={() => {
-          handleChangeState('start');
-        }}>Start</Button
-      >
-      <Button
-        variant="destructive"
-        class="max-md:w-full"
-        size="sm"
-        on:click={() => {
-          handleChangeState('remove');
-        }}>Remove</Button
-      >
-    {/if}
-  </CardFooter>
-</Card>
-
-<Card>
-  <CardHeader class="flex flex-row items-center justify-between">
-    <CardTitle>Clients</CardTitle>
-  </CardHeader>
-  {#if data.server.peers.length > 0}
-    <CardContent class="space-y-3">
-      {#each data.server.peers as peer}
-        <Peer
-          {peer}
-          serverKey={data.server.publicKey}
-          serverPort={data.server.listen}
-          serverDNS={data.server.dns}
-          on:rename={({ detail }) => {
-            handleRename(peer.id.toString(), detail);
-          }}
-          on:remove={() => {
-            handleRemove(peer.id.toString());
-          }}
-        />
-      {/each}
-    </CardContent>
-  {:else}
     <CardContent>
-      <Empty description={'No Clients!'} />
+      {#if data.server.tor}
+        <DetailRow label={'Mode'}>
+          <Badge variant="tor">Tor</Badge>
+        </DetailRow>
+      {/if}
+
+      <DetailRow label={'IP address'}>
+        <pre> {data.server.address}/24 </pre>
+      </DetailRow>
+
+      <DetailRow label={'Listen Port'}>
+        <pre> {data.server.listen} </pre>
+      </DetailRow>
+
+      <DetailRow label={'Total Usage'}>
+        <div class="flex items-center gap-3 text-sm">
+          <div class="flex items-center gap-x-1.5">
+            <i class="fas fa-arrow-up text-gray-500"></i>
+            <span>{prettyBytes(data.usage.total.tx)}</span>
+          </div>
+          <div class="flex items-center gap-x-1.5">
+            <i class="fas fa-arrow-down text-gray-500"></i>
+            <span>{prettyBytes(data.usage.total.rx)}</span>
+          </div>
+        </div>
+      </DetailRow>
+
+      <DetailRow label={'Status'}>
+        <Badge variant={data.server.status === 'up' ? 'success' : 'destructive'} />
+      </DetailRow>
+
+      <DetailRow label={'Public Key'}>
+        <CopiableText value={data.server.publicKey}>
+          <MiddleEllipsis content={data.server.publicKey} maxLength={12} />
+        </CopiableText>
+      </DetailRow>
     </CardContent>
-  {/if}
-  <CardFooter>
-    <CreatePeerDialog let:builder>
-      <Button size="sm" builders={[builder]}>Add Client</Button>
-    </CreatePeerDialog>
-  </CardFooter>
-</Card>
+
+    <CardFooter class="flex flex-wrap items-center gap-2">
+      {#if data.server.status === 'up'}
+        <Button
+          variant="outline"
+          class="max-md:w-full"
+          size="sm"
+          on:click={() => {
+            handleChangeState('restart');
+          }}>Restart</Button
+        >
+        <Button
+          variant="destructive"
+          class="max-md:w-full"
+          size="sm"
+          on:click={() => {
+            handleChangeState('stop');
+          }}>Stop</Button
+        >
+      {:else}
+        <Button
+          variant="success"
+          class="max-md:w-full bg-green-500"
+          size="sm"
+          on:click={() => {
+            handleChangeState('start');
+          }}>Start</Button
+        >
+        <Button
+          variant="destructive"
+          class="max-md:w-full"
+          size="sm"
+          on:click={() => {
+            handleChangeState('remove');
+          }}>Remove</Button
+        >
+      {/if}
+    </CardFooter>
+  </Card>
+
+  <Card>
+    <CardHeader class="flex flex-row items-center justify-between">
+      <CardTitle>Clients</CardTitle>
+    </CardHeader>
+    {#if data.server.peers.length > 0}
+      <CardContent class="space-y-3">
+        {#each data.server.peers as peer}
+          <Peer
+            {peer}
+            serverKey={data.server.publicKey}
+            serverPort={data.server.listen}
+            serverDNS={data.server.dns}
+            on:rename={({ detail }) => {
+              handleRename(peer.id.toString(), detail);
+            }}
+            on:remove={() => {
+              handleRemove(peer.id.toString());
+            }}
+          />
+        {/each}
+      </CardContent>
+    {:else}
+      <CardContent>
+        <Empty description={'No Clients!'} />
+      </CardContent>
+    {/if}
+    <CardFooter>
+      <CreatePeerDialog let:builder>
+        <Button size="sm" builders={[builder]}>Add Client</Button>
+      </CreatePeerDialog>
+    </CardFooter>
+  </Card>
+</div>
