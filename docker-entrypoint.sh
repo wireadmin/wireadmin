@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-TOR_CONFIG="/etc/tor/torrc"
 ENV_FILE="/app/.env"
+
+TOR_CONFIG="/etc/tor/torrc"
+TOR_CONFIG_TEMPLATE="${TOR_CONFIG}.template"
 
 log() {
   local level=$1
@@ -15,6 +17,9 @@ to_camel_case() {
 }
 
 generate_tor_config() {
+  # Copying the torrc template to the torrc file
+  cp "${TOR_CONFIG_TEMPLATE}" "${TOR_CONFIG}"
+
   # IP address of the container
   local inet_address="$(hostname -i | awk '{print $1}')"
 
@@ -33,16 +38,11 @@ generate_tor_config() {
   awk -F= '!a[tolower($1)]++' "${TOR_CONFIG}" >"/tmp/$(basename "${TOR_CONFIG}")" &&
     mv "/tmp/$(basename "${TOR_CONFIG}")" "${TOR_CONFIG}"
 
-  # Checking if there is /etc/torrc.d folder and if there is
-  # any file in it, adding them to the torrc file
+  # Checking if there is /etc/torrc.d folder and if there are use globbing to include all files
   local torrc_files=$(find /etc/torrc.d -type f -name "*.conf")
   if [ -n "${torrc_files}" ]; then
     log "notice" "Found torrc.d folder with configuration files"
-
-    for file in ${torrc_files}; do
-      log "notice" "Adding $file to the main torrc file"
-      cat "$file" >>"${TOR_CONFIG}"
-    done
+    echo "%include /etc/torrc.d/*.conf" >>"${TOR_CONFIG}"
   fi
 
   # Remove comment line with single Hash

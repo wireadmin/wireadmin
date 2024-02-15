@@ -22,7 +22,7 @@ RUN apk update && apk upgrade &&\
   rm -rf /var/cache/apk/*
 
 # Copy Tor Configs
-COPY /config/torrc /etc/tor/torrc
+COPY /config/torrc.template /etc/tor/torrc.template
 COPY /config/obfs4-bridges.conf /etc/torrc.d/obfs4-bridges.conf
 
 # Copy user scripts

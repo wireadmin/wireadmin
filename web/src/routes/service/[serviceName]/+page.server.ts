@@ -3,59 +3,26 @@ import type { PageServerLoad } from './$types';
 import logger from '$lib/logger';
 import { execa } from 'execa';
 import { promises } from 'node:fs';
-
-const services: Record<string, Service> = {
-  tor: {
-    name: 'Tor',
-    command: {
-      start: 'screen -L -Logfile /var/vlogs/tor -dmS "tor" tor -f /etc/tor/torrc',
-      stop: 'pkill tor',
-      logs: 'logs tor',
-    },
-  },
-};
-
-interface Service {
-  name: string;
-  command: {
-    start: string;
-    stop: string;
-    logs: string;
-  };
-}
+import { restart, type ServiceName, SERVICES } from '$lib/services';
 
 export const load: PageServerLoad = async ({ params }) => {
-  if (!params.serviceName || !services[params.serviceName]) {
+  const { serviceName } = params as { serviceName: ServiceName | undefined };
+
+  if (!serviceName || !SERVICES[serviceName]) {
+    logger.error('Service not found. service:', serviceName);
     throw error(404, 'Not Found');
   }
 
+  const { name } = SERVICES[serviceName];
+
   return {
     slug: params.serviceName,
-    title: services[params.serviceName].name,
+    title: name,
   };
 };
 
-function restartService(serviceName: string) {
-  // Stop
-  const { exitCode: stopExitCode } = execa(services[serviceName].command.stop, { shell: true });
-
-  // Start
-  const { exitCode: startExitCode } = execa(services[serviceName].command.start, { shell: true });
-
-  logger.info({
-    message: `Restarted ${serviceName} service`,
-    stopExitCode,
-    startExitCode,
-  });
-
-  return {
-    stopExitCode,
-    startExitCode,
-  };
-}
-
 export const actions: Actions = {
-  clearLogs: async ({ request, params }) => {
+  clearLogs: async ({ params }) => {
     const { serviceName } = params;
 
     try {
@@ -66,23 +33,36 @@ export const actions: Actions = {
       throw error(500, 'Unhandled Exception');
     }
   },
-  logs: async ({ request, params }) => {
-    const { serviceName } = params;
+  logs: async ({ params }) => {
+    const { serviceName } = params as { serviceName: ServiceName | undefined };
+
+    if (!serviceName || !SERVICES[serviceName]) {
+      logger.error('Service not found. service:', serviceName);
+      throw error(404, 'Not Found');
+    }
+
+    const service = SERVICES[serviceName];
 
     try {
-      const { stdout } = await execa(services[serviceName!].command.logs, { shell: true });
+      const { stdout } = await execa(service.command.logs, { shell: true });
       return { logs: stdout };
     } catch (e) {
       logger.error(e);
       throw error(500, 'Unhandled Exception');
     }
   },
-  restart: async ({ request, params }) => {
-    const { serviceName } = params;
+  restart: async ({ params }) => {
+    const { serviceName } = params as { serviceName: ServiceName | undefined };
+
+    if (!serviceName || !SERVICES[serviceName]) {
+      logger.error('Service not found. service:', serviceName);
+      throw error(404, 'Not Found');
+    }
 
     try {
-      const { stopExitCode, startExitCode } = restartService(serviceName!);
-      return { stopExitCode, startExitCode };
+      const success = restart(serviceName!);
+
+      return { success };
     } catch (e) {
       logger.error(e);
       throw error(500, 'Unhandled Exception');

@@ -5,8 +5,8 @@ WORKDIR /app
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
-COPY --from=chriswayg/tor-alpine:latest /usr/local/bin/meek-server /usr/local/bin/meek-server
+COPY --from=chriswayg/tor-alpine:latest --platform=$BUILDPLATFORM /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
+COPY --from=chriswayg/tor-alpine:latest --platform=$BUILDPLATFORM /usr/local/bin/meek-server /usr/local/bin/meek-server
 
 # Update and upgrade packages
 RUN apk update && apk upgrade &&\
@@ -21,7 +21,7 @@ RUN apk update && apk upgrade &&\
   # Clear APK cache
   rm -rf /var/cache/apk/*
 
-COPY /config/torrc /etc/tor/torrc
+COPY /config/torrc.template /etc/tor/torrc.template
 
 # Copy user scripts
 COPY /bin /usr/local/bin
