@@ -45,7 +45,8 @@
     "zod": "^3.22.4"
   },
   "dependencies": {
-    "@litehex/storage-box": "^0.1.1-canary.0",
+    "@litehex/storage-box": "^0.2.1",
+    "@t3-oss/env-core": "0.7.3",
     "bits-ui": "^0.18.0",
     "clsx": "^2.1.0",
     "deepmerge": "^4.3.1",

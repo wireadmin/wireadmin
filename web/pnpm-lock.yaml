@@ -6,8 +6,11 @@ settings:
 
 dependencies:
   '@litehex/storage-box':
-    specifier: ^0.1.1-canary.0
-    version: 0.1.1-canary.0
+    specifier: ^0.2.1
+    version: 0.2.1
+  '@t3-oss/env-core':
+    specifier: 0.7.3
+    version: 0.7.3(typescript@5.3.3)(zod@3.22.4)
   bits-ui:
     specifier: ^0.18.0
     version: 0.18.0(svelte@4.2.10)
@@ -386,12 +389,13 @@ packages:
       '@jridgewell/resolve-uri': 3.1.1
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  /@litehex/storage-box@0.1.1-canary.0:
-    resolution: { integrity: sha512-wUSYhr8jdbrBDeKu0HHmaXVLKAJWXtyD41g/6deCROQ0OwyQwNPCOWwAjMVzdrIpTo6fyGl+QliMxyNSUqbCqw== }
+  /@litehex/storage-box@0.2.1:
+    resolution: { integrity: sha512-0x1gA0eDHic5OwILgGKRvS2WD8fdW/jaZQjxPiJgTrQst1J1o4dtL65u/ZnU+18fV7AC4cXJ0dTkYimHGEHz7w== }
     dependencies:
       '@msgpack/msgpack': 3.0.0-beta2
       debounce: 2.0.0
-      type-fest: 4.10.2
+      path: 0.12.7
+      type-fest: 4.12.0
     dev: false
 
   /@melt-ui/svelte@0.71.2(svelte@4.2.10):
@@ -665,6 +669,19 @@ packages:
     resolution: {integrity: sha512-FaruWX6KdudYloq1AHD/4nU+UsMTdNE8CKyrseXWEcgjDAbvkwJg2QGPAnfIJLIWsjZOSPLOAykK6fuYp4vp4A==}
     dependencies:
       tslib: 2.6.2
+    dev: false
+
+  /@t3-oss/env-core@0.7.3(typescript@5.3.3)(zod@3.22.4):
+    resolution: { integrity: sha512-hhtj59TKC6TKVdwJ0CcbKsvkr9R8Pc/SNKd4IgGUIC9T9X6moB8EZZ3FTJdABA/h9UABCK4J+KsF8gzmvMvHPg== }
+    peerDependencies:
+      typescript: '>=4.7.2'
+      zod: ^3.0.0
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+    dependencies:
+      typescript: 5.3.3
+      zod: 3.22.4
     dev: false
 
   /@types/chai@4.3.11:
@@ -1385,6 +1402,10 @@ packages:
       once: 1.4.0
       wrappy: 1.0.2
 
+  /inherits@2.0.3:
+    resolution: { integrity: sha512-x00IRNXNy63jwGkJmzPigoySHbaqpNuzKbBOmzK+g2OdZpQ9w+sxCN+VSB3ja7IAge2OP2qpfxTjeNcyjmW1uw== }
+    dev: false
+
   /inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
@@ -1831,6 +1852,13 @@ packages:
 
   /path-parse@1.0.7:
     resolution: {integrity: sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==}
+
+  /path@0.12.7:
+    resolution: { integrity: sha512-aXXC6s+1w7otVF9UletFkFcDsJeO7lSZBPUQhtb5O0xJe8LtYhj/GxldoL09bBj9+ZmE2hNoHqQSFMN5fikh4Q== }
+    dependencies:
+      process: 0.11.10
+      util: 0.10.4
+    dev: false
 
   /pathval@2.0.0:
     resolution: { integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA== }
@@ -2544,8 +2572,8 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  /type-fest@4.10.2:
-    resolution: { integrity: sha512-anpAG63wSpdEbLwOqH8L84urkL6PiVIov3EMmgIhhThevh9aiMQov+6Btx0wldNcvm4wV+e2/Rt1QdDwKHFbHw== }
+  /type-fest@4.12.0:
+    resolution: { integrity: sha512-5Y2/pp2wtJk8o08G0CMkuFPCO354FGwk/vbidxrdhRGZfd0tFnb4Qb8anp9XxXriwBgVPjdWbKpGl4J9lJY2jQ== }
     engines: { node: '>=16' }
     dev: false
 
@@ -2553,7 +2581,6 @@ packages:
     resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
 
   /undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
@@ -2571,6 +2598,12 @@ packages:
 
   /util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
+
+  /util@0.10.4:
+    resolution: { integrity: sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A== }
+    dependencies:
+      inherits: 2.0.3
+    dev: false
 
   /vite@5.1.2(@types/node@20.11.17):
     resolution: { integrity: sha512-uwiFebQbTWRIGbCaTEBVAfKqgqKNKMJ2uPXsXeLIZxM8MVMjoS3j0cG8NrPxdDIadaWnPSjrkLWffLSC+uiP3Q== }
