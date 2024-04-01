@@ -15,6 +15,7 @@
   import { onDestroy } from 'svelte';
 
   export let data: PageData;
+  let dialogOpen = false;
 
   const handleRename = async (peerId: string, name: string) => {
     const resp = await fetchAction({
@@ -75,7 +76,9 @@
 
   // revalidate every 2 seconds
   const interval = setInterval(() => {
-    invalidateAll();
+    if (!dialogOpen) {
+      invalidateAll();
+    }
   }, 2000);
 
   onDestroy(() => {
@@ -206,8 +209,9 @@
         <Empty description={'No Clients!'} />
       </CardContent>
     {/if}
+
     <CardFooter>
-      <CreatePeerDialog let:builder>
+      <CreatePeerDialog data={data.form} let:builder bind:open={dialogOpen}>
         <Button size="sm" builders={[builder]}>Add Client</Button>
       </CreatePeerDialog>
     </CardFooter>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { isBetween, isPrivateIP } from '$lib/utils';
-import { IPV4_REGEX } from '$lib/constants';
+import { isBetween } from '$lib/utils/number';
+import { IPV4_REGEX, isPrivateIP } from '$lib/utils/ip';
 
 export const NameSchema = z
   .string()

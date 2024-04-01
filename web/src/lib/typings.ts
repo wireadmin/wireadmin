@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { IPV4_REGEX } from '$lib/constants';
 import { NameSchema, TorSchema } from '$lib/wireguard/schema';
+import { IPV4_REGEX } from 'node-netkit/ip';
 
 export const WgKeySchema = z.object({
   privateKey: z.string(),

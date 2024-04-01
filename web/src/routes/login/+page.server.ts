@@ -1,30 +1,30 @@
 import type { Actions } from '@sveltejs/kit';
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { setError, superValidate } from 'sveltekit-superforms/server';
+import { setError, superValidate } from 'sveltekit-superforms';
 import { formSchema } from './schema';
 import { generateToken } from '$lib/auth';
 import logger from '$lib/logger';
-import dotenv from 'dotenv';
+import { zod } from 'sveltekit-superforms/adapters';
+import { env } from '$lib/env';
+import { AUTH_COOKIE } from '$lib/constants';
 
-export const load: PageServerLoad = () => {
+export const load: PageServerLoad = async () => {
   return {
-    form: superValidate(formSchema),
+    form: await superValidate(zod(formSchema)),
   };
 };
 
 export const actions: Actions = {
   default: async (event) => {
     const { cookies } = event;
-    const form = await superValidate(event, formSchema);
+    const form = await superValidate(event, zod(formSchema));
 
     if (!form.valid) {
       return fail(400, { ok: false, message: 'Bad Request', form });
     }
 
-    dotenv.config();
-
-    const { HASHED_PASSWORD } = process.env;
+    const { HASHED_PASSWORD } = env;
     if (HASHED_PASSWORD && HASHED_PASSWORD !== '') {
       const { password } = form.data;
 
@@ -34,18 +34,14 @@ export const actions: Actions = {
       if (hashed !== receivedHashed) {
         return setError(form, 'password', 'Incorrect password.');
       }
-    }
-
-    if (!HASHED_PASSWORD || HASHED_PASSWORD === '') {
+    } else {
       logger.warn('No password is set!');
     }
 
     const token = await generateToken();
 
-    const { ORIGIN } = process.env;
-
-    const secure = ORIGIN?.startsWith('https://') ?? false;
-    cookies.set('authorization', token, {
+    const secure = env.ORIGIN?.startsWith('https://') ?? false;
+    cookies.set(AUTH_COOKIE, token, {
       secure,
       httpOnly: true,
       path: '/',

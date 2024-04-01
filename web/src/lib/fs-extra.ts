@@ -1,4 +1,4 @@
-import { accessSync, promises } from 'fs';
+import { accessSync, promises } from 'node:fs';
 
 export function fsAccess(path: string): boolean {
   try {

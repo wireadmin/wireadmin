@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
   import BasePage from '$lib/components/page/BasePage.svelte';
   import type { PageData } from './$types';
-  import CreateServerDialog from './CreateServerDialog.svelte';
-  import Server from './Server.svelte';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import fetchAction from '$lib/fetch-action';
-  import { Empty } from '$lib/components/empty';
   import Service from './Service.svelte';
+  import { Empty } from '$lib/components/empty';
+  import Server from './Server.svelte';
+  import fetchAction from '$lib/fetch-action';
+  import CreateServerDialog from './CreateServerDialog.svelte';
+  import { Button } from '$lib/components/ui/button';
 
   export let data: PageData;
 
@@ -34,7 +34,7 @@
   <div class={'flex items-center justify-between py-3 px-2'}>
     <h2 class={'font-bold text-xl'}>Hello there 👋</h2>
 
-    <CreateServerDialog let:builder>
+    <CreateServerDialog data={data.form} let:builder>
       <Button builders={[builder]}>
         <i class="fas fa-plus mr-2"></i>
         Create Server
@@ -42,7 +42,7 @@
     </CreateServerDialog>
   </div>
 
-  <div class="space-y-3.5">
+  <div class="w-full space-y-3.5">
     <Card>
       {#if data.servers?.length < 1}
         <Empty description={'No server!'} />
@@ -72,5 +72,5 @@
         </Service>
       </CardContent>
     </Card>
-  </div>
-</BasePage>
+  </div></BasePage
+>

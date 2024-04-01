@@ -1,21 +1,21 @@
-import type { Handle } from '@sveltejs/kit';
+import { type Handle, redirect } from '@sveltejs/kit';
 import { verifyToken } from '$lib/auth';
+import { AUTH_COOKIE } from '$lib/constants';
 import 'dotenv/config';
 
 export const handle: Handle = async ({ event, resolve }) => {
   if (!AUTH_EXCEPTION.includes(event.url.pathname)) {
-    const token = event.cookies.get('authorization');
+    const token = event.cookies.get(AUTH_COOKIE);
     const token_valid = await verifyToken(token ?? '');
 
-    const redirect = new Response(null, { status: 302, headers: { location: '/login' } });
     const is_login_page = event.url.pathname === '/login';
-
     if (!token_valid && !is_login_page) {
-      return redirect;
+      // return redirect;
+      throw redirect(303, '/login');
     }
 
     if (token_valid && is_login_page) {
-      return new Response(null, { status: 302, headers: { location: '/' } });
+      throw redirect(303, '/');
     }
   }
 

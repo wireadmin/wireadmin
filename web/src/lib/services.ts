@@ -5,7 +5,7 @@ export const SERVICES = <const>{
   tor: {
     name: 'Tor',
     command: {
-      start: 'screen -L -Logfile /var/vlogs/tor -dmS "tor" tor -f /etc/tor/torrc',
+      start: 'screen -dmS "tor" tor -f /etc/tor/torrc',
       stop: 'pkill tor',
       logs: 'logs tor',
     },

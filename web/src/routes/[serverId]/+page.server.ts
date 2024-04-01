@@ -2,13 +2,14 @@ import { type Actions, error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { findServer, generateWgKey, WGServer } from '$lib/wireguard';
 import { NameSchema } from '$lib/wireguard/schema';
-import { setError, superValidate } from 'sveltekit-superforms/server';
-import { CreatePeerSchema } from './schema';
+import { setError, superValidate } from 'sveltekit-superforms';
+import { createPeerSchema } from './schema';
 import logger from '$lib/logger';
+import { zod } from 'sveltekit-superforms/adapters';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { serverId } = params;
-  const exists = await WGServer.exists(serverId ?? '');
+  const exists = WGServer.exists(serverId ?? '');
 
   if (!exists) {
     logger.warn(`Server not found. Redirecting to home page. ServerId: ${serverId}`);
@@ -31,6 +32,7 @@ export const load: PageServerLoad = async ({ params }) => {
   return {
     server,
     usage,
+    form: await superValidate(zod(createPeerSchema)),
   };
 };
 
@@ -153,7 +155,7 @@ export const actions: Actions = {
     return { ok: true };
   },
   create: async (event) => {
-    const form = await superValidate(event, CreatePeerSchema);
+    const form = await superValidate(event, zod(createPeerSchema));
     if (!form.valid) {
       logger.warn('CreatePeer: Bad Request: failed to validate form');
       return setError(form, 'Bad Request');

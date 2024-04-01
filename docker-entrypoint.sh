@@ -101,7 +101,7 @@ awk -F= '!a[$1]++' "${ENV_FILE}" >"/tmp/$(basename "${ENV_FILE}")" &&
 generate_tor_config
 
 # Start Tor on the background
-screen -L -Logfile /var/vlogs/tor -dmS "tor" tor -f "${TOR_CONFIG}"
+screen -dmS "tor" tor -f "${TOR_CONFIG}"
 
 sleep 1
 echo -e "\n======================== Versions ========================"

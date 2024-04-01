@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import path from 'path';
 import deepmerge from 'deepmerge';
 import type { Peer, WgKey, WgServer } from '$lib/typings';
@@ -192,7 +192,7 @@ export class WGServer {
   static async getFreePeerIp(serverId: string): Promise<string | undefined> {
     const server = await findServer(serverId);
     if (!server) {
-      logger.error('WGSerevr: GetFreePeerIP: no server found');
+      logger.error('WGServer: GetFreePeerIP: no server found');
       return undefined;
     }
 

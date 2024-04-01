@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { CreatePeerSchema, type CreatePeerSchemaType } from './schema';
-  import type { SuperValidated } from 'sveltekit-superforms';
+  import { createPeerSchema, type CreatePeerSchemaType } from './schema';
+  import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
   import {
     Dialog,
     DialogContent,
@@ -10,31 +10,54 @@
     DialogTrigger,
   } from '$lib/components/ui/dialog';
   import {
-    Form,
     FormButton,
+    FormControl,
     FormField,
-    FormInput,
-    FormItem,
+    FormFieldErrors,
     FormLabel,
-    FormValidation,
   } from '$lib/components/ui/form';
   import { cn } from '$lib/utils';
   import { invalidateAll } from '$app/navigation';
   import toast from 'svelte-french-toast';
+  import { zodClient } from 'sveltekit-superforms/adapters';
+  import { Input } from '$lib/components/ui/input';
 
   let loading: boolean = false;
-  let dialogOpen = false;
+  export let open = false;
 
-  let form: SuperValidated<CreatePeerSchemaType>;
+  export let data: SuperValidated<Infer<CreatePeerSchemaType>>;
+
+  const form = superForm(data, {
+    dataType: 'json',
+    validators: zodClient(createPeerSchema),
+    onSubmit: () => {
+      loading = true;
+    },
+    onError: (e) => {
+      loading = false;
+      console.error('Client-side: FormError:', e);
+    },
+    onResult: ({ result }) => {
+      if (result.type === 'success') {
+        handleSuccess();
+      } else {
+        toast.error('Failed to create peer');
+        console.error('Server-failure: Result:', result);
+      }
+      loading = false;
+    },
+  });
+
+  const { form: formData, enhance } = form;
 
   const handleSuccess = async () => {
     await invalidateAll();
     toast.success('Peer created!');
-    dialogOpen = false;
+    open = false;
   };
 </script>
 
-<Dialog bind:open={dialogOpen}>
+<Dialog bind:open>
   <DialogTrigger asChild let:builder>
     <slot {builder} />
   </DialogTrigger>
@@ -42,38 +65,18 @@
     <DialogHeader>
       <DialogTitle>Create Peer</DialogTitle>
     </DialogHeader>
-    <Form
-      {form}
-      schema={CreatePeerSchema}
-      class="space-y-3.5"
-      action="?/create"
-      method={'POST'}
-      let:config
-      options={{
-        onSubmit: () => {
-          loading = true;
-        },
-        onError: (e) => {
-          loading = false;
-          console.error('Client-side: FormError:', e);
-        },
-        onResult: ({ result }) => {
-          if (result.type === 'success') {
-            handleSuccess();
-          } else {
-            toast.error('Failed to create peer');
-            console.error('Server-failure: Result:', result);
-          }
-          loading = false;
-        },
-      }}
-    >
-      <FormField {config} name={'name'}>
-        <FormItem>
+    <form class="space-y-3.5" method="POST" action="?/create" use:enhance>
+      <FormField {form} name={'name'}>
+        <FormControl let:attrs>
           <FormLabel>Name</FormLabel>
-          <FormInput placeholder={'e.g. Unicorn'} type={'text'} />
-          <FormValidation />
-        </FormItem>
+          <Input
+            {...attrs}
+            bind:value={$formData.name}
+            placeholder={'e.g. Unicorn'}
+            type={'text'}
+          />
+        </FormControl>
+        <FormFieldErrors />
       </FormField>
 
       <DialogFooter>
@@ -83,6 +86,6 @@
           Create
         </FormButton>
       </DialogFooter>
-    </Form>
+    </form>
   </DialogContent>
 </Dialog>

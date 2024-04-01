@@ -1,4 +1,4 @@
-import { type Actions, error } from '@sveltejs/kit';
+import { type Actions, error, fail } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import {
   findServer,
@@ -8,15 +8,16 @@ import {
   isPortReserved,
   WGServer,
 } from '$lib/wireguard';
-import { setError, superValidate } from 'sveltekit-superforms/server';
-import { CreateServerSchema } from './schema';
+import { setError, superValidate } from 'sveltekit-superforms';
+import { createServerSchema } from './schema';
 import { NameSchema } from '$lib/wireguard/schema';
 import logger from '$lib/logger';
+import { zod } from 'sveltekit-superforms/adapters';
 
 export const load: PageServerLoad = async () => {
   return {
     servers: getServers(),
-    form: superValidate(CreateServerSchema),
+    form: await superValidate(zod(createServerSchema)),
   };
 };
 
@@ -43,9 +44,11 @@ export const actions: Actions = {
     return { ok: true };
   },
   create: async (event) => {
-    const form = await superValidate(event, CreateServerSchema);
+    const form = await superValidate(event, zod(createServerSchema));
     if (!form.valid) {
-      return setError(form, 'Bad Request');
+      return fail(400, {
+        form,
+      });
     }
 
     const { name, address, tor = false, port, dns, mtu = '1350' } = form.data;

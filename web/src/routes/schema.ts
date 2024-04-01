@@ -8,7 +8,7 @@ import {
   TorSchema,
 } from '$lib/wireguard/schema';
 
-export const CreateServerSchema = z.object({
+export const createServerSchema = z.object({
   name: NameSchema,
   address: AddressSchema,
   port: PortSchema,
@@ -17,4 +17,4 @@ export const CreateServerSchema = z.object({
   mtu: MtuSchema,
 });
 
-export type CreateServerSchemaType = typeof CreateServerSchema;
+export type CreateServerSchemaType = typeof createServerSchema;

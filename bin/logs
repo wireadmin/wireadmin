@@ -1,13 +1,16 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-set -e
+# This script is used for getting last 100 lines of a screen session
 
-LOG_DIR="/var/vlogs"
-LOG_FILE="${LOG_DIR}/${1}"
+SCREEN_NAME="$1"
+LIMIT="${2:-100}"
+SCRIPT=$(basename "${0}")
 
-if [ ! -f "${LOG_FILE}" ]; then
-  echo "Usage: ${0} <filename>"
+if [ -z "$SCREEN_NAME" ]; then
+  echo "Usage: ${SCRIPT} <screen_name>"
   exit 1
 fi
 
-cat "${LOG_FILE}"
+screen -S "$SCREEN_NAME" -X hardcopy /tmp/screen-hardcopy
+tail -n "${LIMIT}" /tmp/screen-hardcopy
+rm /tmp/screen-hardcopy

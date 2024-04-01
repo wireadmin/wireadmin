@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { CreateServerSchema, type CreateServerSchemaType } from './schema';
-  import type { SuperValidated } from 'sveltekit-superforms';
+  import { createServerSchema, type CreateServerSchemaType } from './schema';
+  import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
   import {
     Dialog,
     DialogContent,
@@ -10,16 +10,13 @@
     DialogTrigger,
   } from '$lib/components/ui/dialog';
   import {
-    Form,
     FormButton,
+    FormControl,
     FormDescription,
     FormField,
-    FormInput,
+    FormFieldErrors,
     FormLabel,
-    FormSwitch,
-    FormValidation,
   } from '$lib/components/ui/form';
-  import { FormItem } from '$lib/components/ui/form/index.js';
   import { cn } from '$lib/utils';
   import {
     Collapsible,
@@ -28,11 +25,38 @@
   } from '$lib/components/ui/collapsible';
   import { Button } from '$lib/components/ui/button';
   import toast from 'svelte-french-toast';
+  import { Input } from '$lib/components/ui/input';
+  import { zodClient } from 'sveltekit-superforms/adapters';
+  import { Switch } from '$lib/components/ui/switch';
 
   let loading: boolean = false;
   let dialogOpen = false;
 
-  let form: SuperValidated<CreateServerSchemaType>;
+  export let data: SuperValidated<Infer<CreateServerSchemaType>>;
+
+  const form = superForm(data, {
+    dataType: 'json',
+    validators: zodClient(createServerSchema),
+    onSubmit: () => {
+      loading = true;
+    },
+    onError: (e) => {
+      loading = false;
+      console.error('Client-side: FormError:', e);
+    },
+    onResult: ({ result }) => {
+      loading = false;
+      if (result.type === 'success') {
+        dialogOpen = false;
+        toast.success('Server created successfully!');
+      } else {
+        console.error('Server-failure: Result:', result);
+        toast.error('Server failed to create.');
+      }
+    },
+  });
+
+  const { form: formData, enhance } = form;
 </script>
 
 <Dialog bind:open={dialogOpen}>
@@ -43,98 +67,82 @@
     <DialogHeader>
       <DialogTitle>Create Server</DialogTitle>
     </DialogHeader>
-    <Form
-      {form}
-      schema={CreateServerSchema}
-      class="space-y-3.5"
-      action="?/create"
-      method={'POST'}
-      let:config
-      options={{
-        onSubmit: () => {
-          loading = true;
-        },
-        onError: (e) => {
-          loading = false;
-          console.error('Client-side: FormError:', e);
-        },
-        onResult: ({ result }) => {
-          loading = false;
-          if (result.type === 'success') {
-            dialogOpen = false;
-            toast.success('Server created successfully!');
-          } else {
-            console.error('Server-failure: Result:', result);
-            toast.error('Server failed to create.');
-          }
-        },
-      }}
-    >
-      <FormField {config} name={'name'}>
-        <FormItem>
+
+    <form method="POST" action="?/create" use:enhance>
+      <FormField {form} name={'name'}>
+        <FormControl let:attrs>
           <FormLabel>Name</FormLabel>
-          <FormInput placeholder={'e.g. CuteHub'} type={'text'} />
-          <FormValidation />
-        </FormItem>
+          <Input
+            {...attrs}
+            bind:value={$formData.name}
+            placeholder={'e.g. CuteHub'}
+            type={'text'}
+          />
+          <FormFieldErrors />
+        </FormControl>
       </FormField>
 
-      <FormField {config} name={'address'}>
-        <FormItem>
+      <FormField {form} name={'address'}>
+        <FormControl let:attrs>
           <FormLabel>Address</FormLabel>
-          <FormInput placeholder={'e.g. 10.8.0.1'} type={'text'} />
-          <FormDescription>This is the Private IP Address of the server.</FormDescription>
-          <FormValidation />
-        </FormItem>
+          <Input
+            {...attrs}
+            bind:value={$formData.address}
+            placeholder={'e.g. 10.8.0.1'}
+            type={'text'}
+          />
+        </FormControl>
+        <FormDescription>This is the Private IP Address of the server.</FormDescription>
+        <FormFieldErrors />
       </FormField>
 
-      <FormField {config} name={'port'}>
-        <FormItem>
+      <FormField {form} name={'port'}>
+        <FormControl let:attrs>
           <FormLabel>Port</FormLabel>
-          <FormInput placeholder={'e.g. 51820'} type={'text'} />
-          <FormDescription
-            >This is the port that the WireGuard server will listen on.</FormDescription
-          >
-          <FormValidation />
-        </FormItem>
+          <Input {...attrs} bind:value={$formData.port} placeholder={'e.g. 51820'} type={'text'} />
+        </FormControl>
+        <FormDescription>This is the port that the WireGuard server will listen on.</FormDescription
+        >
+        <FormFieldErrors />
       </FormField>
 
       <Collapsible>
         <CollapsibleTrigger asChild let:builder>
           <Button builders={[builder]} variant="ghost" size="sm" class="mb-4 -mr-2">
-            <i class="far fa-cog mr-2"></i>
+            <i
+              class={cn('far fa-cog mr-2', builder['data-state'] === 'open' ? 'animate-spin' : '')}
+            />
             <span>Advanced Options</span>
           </Button>
         </CollapsibleTrigger>
 
         <CollapsibleContent class="space-y-6">
-          <FormField {config} name={'tor'}>
-            <FormItem class="flex items-center justify-between">
-              <div class="space-y-0.5">
-                <FormLabel>Use Tor</FormLabel>
-                <FormDescription>This will route all outgoing traffic through Tor.</FormDescription>
-              </div>
-              <FormSwitch />
-            </FormItem>
+          <FormField {form} name={'tor'}>
+            <FormControl let:attrs>
+              <Switch {...attrs} bind:checked={$formData.tor} />
+              <FormLabel>Use Tor</FormLabel>
+            </FormControl>
+            <FormDescription>This will route all outgoing traffic through Tor.</FormDescription>
           </FormField>
 
-          <FormField {config} name={'dns'}>
-            <FormItem>
+          <FormField {form} name={'dns'}>
+            <FormControl let:attrs>
               <FormLabel>DNS</FormLabel>
-              <FormInput placeholder={'e.g. 1.1.1.1'} type={'text'} />
-              <FormDescription
-                >Optional. This is the DNS server that will be pushed to clients.</FormDescription
-              >
-              <FormValidation />
-            </FormItem>
+              <Input placeholder={'e.g. 1.1.1.1'} type={'text'} />
+            </FormControl>
+            <FormDescription
+            >Optional. This is the DNS server that will be pushed to clients.</FormDescription
+            >
+            <FormFieldErrors />
           </FormField>
 
-          <FormField {config} name={'mtu'}>
-            <FormItem>
+          <FormField {form} name={'mtu'}>
+            <FormControl let:attrs>
               <FormLabel>MTU</FormLabel>
-              <FormInput placeholder={'1350'} type={'text'} />
-              <FormDescription>Optional. Recommended to leave this blank.</FormDescription>
-              <FormValidation />
-            </FormItem>
+              <Input {...attrs} bind:value={$formData.mtu} placeholder={'1350'} type={'text'} />
+            </FormControl>
+            <FormDescription>Optional. Recommended to leave this blank.</FormDescription>
+            <FormFieldErrors />
           </FormField>
         </CollapsibleContent>
       </Collapsible>
@@ -146,6 +154,6 @@
           Create
         </FormButton>
       </DialogFooter>
-    </Form>
+    </form>
   </DialogContent>
 </Dialog>
