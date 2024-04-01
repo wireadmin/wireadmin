@@ -131,7 +131,7 @@
               <Input placeholder={'e.g. 1.1.1.1'} type={'text'} />
             </FormControl>
             <FormDescription
-            >Optional. This is the DNS server that will be pushed to clients.</FormDescription
+              >Optional. This is the DNS server that will be pushed to clients.</FormDescription
             >
             <FormFieldErrors />
           </FormField>

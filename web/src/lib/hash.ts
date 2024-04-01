@@ -5,3 +5,7 @@ export function sha256(data: Buffer | string): string {
   hash.update(data);
   return hash.digest('hex');
 }
+
+export function hex(data: Buffer | string): string {
+  return Buffer.from(data).toString('hex');
+}

@@ -1,7 +1,9 @@
 ARG ALPINE_VERSION=3.19
+ARG NODE_VERSION=20
 
 FROM --platform=$BUILDPLATFORM chriswayg/tor-alpine:latest as tor
-FROM --platform=$BUILDPLATFORM node:alpine${ALPINE_VERSION} as base
+
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as base
 LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
 WORKDIR /app
 
@@ -11,10 +13,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 COPY --from=tor /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
 COPY --from=tor /usr/local/bin/meek-server /usr/local/bin/meek-server
 
-# Update and upgrade packages
-RUN apk update && apk upgrade &&\
-  # Install required packages
-  apk add -U --no-cache \
+# Install required packages
+RUN apk add -U --no-cache \
   iproute2 iptables net-tools \
   screen vim curl bash \
   wireguard-tools \
