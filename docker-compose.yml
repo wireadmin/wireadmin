@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 services:
   wireadmin:
     environment:
@@ -15,8 +15,8 @@ services:
     volumes:
       - persist-data:/data
     ports:
-      - "51820:51820/udp"
-      - "3000:3000/tcp"
+      - '51820:51820/udp'
+      - '3000:3000/tcp'
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
