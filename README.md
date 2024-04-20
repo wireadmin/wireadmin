@@ -3,7 +3,7 @@
 ![Screenshot](assets/screenshot-1.png)
 
 |                                                                                            |                                                                                            |                                                                                            |
-|:------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|
+| :----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------: |
 | <img src="assets/screenshot-2.png" alt="screenshot" style="width:100%;max-height:300px;"/> | <img src="assets/screenshot-4.png" alt="screenshot" style="width:100%;max-height:300px;"/> | <img src="assets/screenshot-3.png" alt="screenshot" style="width:100%;max-height:300px;"/> |
 
 ## Features
@@ -14,23 +14,16 @@
 - List, create, delete, or modify any server or user
 - Scan QR codes or easily download the client configurations.
 
-## Requirements
-
-* A host with a kernel that supports WireGuard.
-* A host with Docker installed.
-
 ## Installation
 
-### 1. Install Docker
+### 1. Prerequisites
 
-To install Docker, go to the official documentation and install a version that meets your environment's requirements.
-
-- [Install Docker Engine](https://docs.docker.com/engine/install/)
+- [Docker Engine](https://docs.docker.com/engine/install/)
 
 ### 2. Persistent Data
 
-WireAdmin uses `redis` to store the WireGuard configurations and their data at `/data`. It's important to mount a volume
-at this location to ensure that your data is not lost during container restarts or updates.
+WireAdmin store configurations at `/data`. It's important to mount a volume at this location to ensure that
+your data is not lost during container restarts or updates.
 
 #### Create a docker volume
 
@@ -38,9 +31,30 @@ at this location to ensure that your data is not lost during container restarts 
 docker volume create wireadmin-data --driver local
 ```
 
-### 3. Run WireAdmin
+### 3. Download Image
 
-Install WireAdmin using the command line:
+#### Build from source
+
+```bash
+git clone https://github.com/shahradelahi/wireadmin
+docker buildx build --tag litehex/wireadmin .
+```
+
+#### Pull from Docker Hub (recommended)
+
+```bash
+docker pull litehex/wireadmin
+```
+
+### 4. Run
+
+When creating each server, ensure that you add the port exposure through Docker. In the below command, the port `51820`
+is added for the WireGuard server.
+
+**NOTE:** The port `3000` is for the WebUI, and can be changed with `PORT` environment variable, but for security
+reasons, it's recommended to NOT expose **_any kind of WebUI_** to the public. It's up to you to remove it after
+configuring
+the Servers/Peers.
 
 ```bash
 docker run --rm \
@@ -53,35 +67,27 @@ docker run --rm \
  --cap-add=SYS_MODULE \
  --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
  --sysctl="net.ipv4.ip_forward=1" \
-  litehex/wireadmin:latest
+  litehex/wireadmin
 ```
-
-Please note that the port `3000` is for the WebUI, and it's up to you to remove it after configuring the Servers/Peers.
-
-> IMPORTANT: When creating each server, ensure that you add the port exposure through Docker. (The port `51820` is added
-> as an example.)
 
 ## Environment Options
 
 These options can be configured by setting environment variables using `-e KEY="VALUE"` in the `docker run` command.
 
-| Option            | Description                                                                                                                            | Optional |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------|
-| `WG_HOST`         | The public IP address of the WireGuard server.                                                                                         |          |
-| `UI_PASSWORD`     | The password for the admin UI.                                                                                                         |          |
-| `TOR_USE_BRIDGES` | Set this to `1` and then mount the bridges file at `/etc/torrc.d/bridges.conf`.                                                        | ✔️       |
-| `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)                                                          | ✔️       |
+| Option            | Description                                                                     | Optional |
+| ----------------- | ------------------------------------------------------------------------------- | -------- |
+| `WG_HOST`         | The public IP address of the WireGuard server.                                  |          |
+| `UI_PASSWORD`     | The password for the admin UI.                                                  |          |
+| `HOST`            | The hostname for the WebUI. (default: `127.0.0.1`)                              | ✔️       |
+| `PORT`            | The port for the WebUI. (default: `3000`)                                       | ✔️       |
+| `TOR_USE_BRIDGES` | Set this to `1` and then mount the bridges file at `/etc/torrc.d/bridges.conf`. | ✔️       |
+| `TOR_*`           | The `Torrc` proxy configuration. (e.g. `SocksPort` as `TOR_SOCKSPORT="9050"`)   | ✔️       |
 
 ## Reporting
 
-If you have any questions, bug reports, and feature requests, please create an issue
+For bug reports, and feature requests, please create an issue
 on [GitHub](https://github.com/shahradelahi/wireadmin/issues).
-
-## Support the Project
-
-Seriously, this project is free and open-source, and all I ask for as support is for you to give a star to [the
-repository](https://github.com/shahradelahi/wireadmin).
 
 ## License
 
-This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details
+[GPL-3.0](LICENSE) © [Shahrad Elahi](https://github.com/shahradelahi)
