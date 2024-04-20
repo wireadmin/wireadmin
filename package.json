@@ -1,16 +1,24 @@
 {
   "name": "wireadmin",
   "version": "0.0.0-dev",
+  "author": "Shahrad Elahi <https://github.com/shahradelahi>",
+  "private": true,
+  "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "dev": "docker compose rm -fsv && docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "dev": "pnpm docker:drop && docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
     "dev:image": "docker buildx build --tag wireadmin -f Dockerfile-Dev .",
-    "build": "docker buildx build --tag wireadmin .",
-    "start": "docker compose rm -fsv && docker compose -f docker-compose.yml up"
+    "build": "pnpm docker:build",
+    "start": "pnpm docker:drop && docker compose -f docker-compose.yml up",
+    "docker:build": "docker buildx build --tag wireadmin .",
+    "docker:drop": "docker compose rm -fsv",
+    "format": "prettier --write . && pnpm -r format",
+    "format:check": "prettier --check . && pnpm -r format:check"
   },
   "keywords": [],
-  "author": "Shahrad Elahi <https://github.com/shahradelahi>",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "devDependencies": {
-    "@changesets/cli": "^2.27.1"
+    "@changesets/cli": "^2.27.1",
+    "prettier": "^3.2.5",
+    "prettier-plugin-svelte": "^3.2.2"
   }
 }
