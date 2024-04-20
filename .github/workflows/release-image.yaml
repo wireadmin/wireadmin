@@ -2,7 +2,7 @@ name: Build Docker Image
 
 on:
   release:
-    types: [ created ]
+    types: [created]
 
 env:
   BUILD_PLATFORMS: linux/amd64,linux/arm64
@@ -41,7 +41,6 @@ jobs:
           push: true
           platforms: ${{ env.BUILD_PLATFORMS }}
           tags: ghcr.io/${{ env.IMAGE_NAME }}:latest,ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-
 
   docker-build:
     runs-on: ubuntu-latest

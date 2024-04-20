@@ -1,13 +1,13 @@
-version: "3.8"
+version: '3.8'
 services:
   wireadmin:
     image: wireadmin
     volumes:
       - ./web/:/app/
     ports:
-      - "5173:5173"
+      - '5173:5173'
     environment:
       - WG_HOST=192.168.1.102
       - UI_PASSWORD=password
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
