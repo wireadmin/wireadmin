@@ -12,6 +12,7 @@ import { fsAccess } from '$lib/fs-extra';
 import { client } from '$lib/storage';
 import { execa } from 'execa';
 import { ip } from 'node-netkit';
+import { allocatedPorts } from 'node-netkit/netstat';
 
 export class WGServer {
   readonly id: string;
@@ -603,7 +604,7 @@ export async function isIPReserved(ip: string): Promise<boolean> {
 }
 
 export async function isPortReserved(port: number): Promise<boolean> {
-  const inUsePorts = [await Network.inUsePorts(), getServers().map((s) => Number(s.listen))].flat();
+  const inUsePorts = [await allocatedPorts(), getServers().map((s) => Number(s.listen))].flat();
   return inUsePorts.includes(port);
 }
 

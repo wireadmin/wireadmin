@@ -45,6 +45,7 @@
     "zod": "^3.22.4"
   },
   "dependencies": {
+    "@litehex/node-checksum": "^0.2.0",
     "@litehex/storage-box": "^0.2.2-canary.0",
     "@t3-oss/env-core": "0.7.3",
     "bits-ui": "^0.18.0",

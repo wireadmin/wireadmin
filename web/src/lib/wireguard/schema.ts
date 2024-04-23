@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isBetween } from '$lib/utils/number';
-import { IPV4_REGEX, isPrivateIP } from '$lib/utils/ip';
+import { IPV4_REGEX, isPrivateIP } from 'node-netkit/ip';
 
 export const NameSchema = z
   .string()
