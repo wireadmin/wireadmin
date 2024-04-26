@@ -7,6 +7,7 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { getPeerConf } from '$lib/wireguard/utils';
   import { QRCodeDialog } from '$lib/components/qrcode-dialog';
+  import { cn } from '$lib/utils';
 
   export let peer: Peer;
 
@@ -56,7 +57,10 @@
 </script>
 
 <div
-  class="flex items-center justify-between p-4 border border-neutral-200/60 rounded-md hover:border-neutral-200"
+  class={cn(
+    'flex items-center justify-between p-4 rounded-md',
+    'border border-input bg-background hover:bg-accent/30 hover:text-accent-foreground',
+  )}
 >
   <div class="flex items-center gap-x-2">
     <div
@@ -84,18 +88,18 @@
     <!-- QRCode -->
     <QRCodeDialog let:builder content={conf}>
       <PeerActionButton builders={[builder]} disabled={isLoading}>
-        <i class={'fal text-neutral-700 group-hover:text-primary fa-qrcode'} />
+        <i class={'fal fa-qrcode'} />
       </PeerActionButton>
     </QRCodeDialog>
 
     <!-- Download -->
     <PeerActionButton disabled={isLoading} on:click={handleDownload}>
-      <i class={'fal text-neutral-700 group-hover:text-primary fa-download'} />
+      <i class={'fal fa-download'} />
     </PeerActionButton>
 
     <!-- Remove -->
     <PeerActionButton loading={isLoading} on:click={handleRemove}>
-      <i class={'fal text-neutral-700 group-hover:text-primary text-lg fa-trash-can'} />
+      <i class={'fal fa-trash-can'} />
     </PeerActionButton>
   </div>
 </div>

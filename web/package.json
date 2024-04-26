@@ -55,6 +55,7 @@
     "formsnap": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-svelte": "^0.330.0",
+    "mode-watcher": "^0.3.0",
     "node-netkit": "0.1.0-canary.2",
     "pino": "^8.18.0",
     "pino-pretty": "^10.3.1",

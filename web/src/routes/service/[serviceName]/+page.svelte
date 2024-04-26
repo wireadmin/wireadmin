@@ -73,7 +73,7 @@
       <CardTitle>Logs</CardTitle>
     </CardHeader>
     <CardContent class="relative">
-      <textarea class="w-full h-80 p-2 bg-gray-100" readonly bind:value={logs} />
+      <textarea class="w-full h-80 p-2" readonly bind:value={logs} />
       {#if !logs}
         <div class="absolute inset-0 flex items-center justify-center">
           <i class="text-4xl animate-spin fas fa-circle-notch"></i>
@@ -81,7 +81,7 @@
       {/if}
     </CardContent>
     <CardFooter class="flex justify-end gap-2">
-      <Button on:click={restart}>Restart</Button>
+      <Button on:click={restart} variant="outline">Restart</Button>
       <Button variant="destructive" on:click={clearLogs} disabled={!logs}>Clear</Button>
     </CardFooter>
   </Card>

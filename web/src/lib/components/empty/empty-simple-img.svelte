@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HTMLAttributes } from 'svelte/elements';
+  import { mode } from 'mode-watcher';
   import { cn } from '$lib/utils';
 
   type $$Props = HTMLAttributes<SVGImageElement> & {
@@ -11,7 +12,12 @@
   let className: $$Props['class'] = undefined;
   export let borderColor: $$Props['borderColor'] = '#d9d9d9';
   export let shadowColor: $$Props['shadowColor'] = '#f5f5f5';
-  export let contentColor: $$Props['contentColor'] = '#fafafa';
+  export let contentColor: $$Props['contentColor'] = 'transparent';
+
+  $: $mode, (contentColor = $mode === 'dark' ? 'transparent' : 'transparent');
+  $: $mode, (shadowColor = $mode === 'dark' ? '#1e2021' : '#f5f5f5');
+  $: $mode, (borderColor = $mode === 'dark' ? '#d0ccc6' : '#d9d9d9');
+
   export { className as class };
 </script>
 
