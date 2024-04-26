@@ -20,7 +20,22 @@
 
 - [Docker Engine](https://docs.docker.com/engine/install/)
 
-### 2. Persistent Data
+### 2. Docker Image
+
+#### Build from source
+
+```bash
+git clone https://github.com/shahradelahi/wireadmin
+docker buildx build --tag litehex/wireadmin ./wireadmin
+```
+
+#### Pull from Docker Hub (recommended)
+
+```bash
+docker pull litehex/wireadmin
+```
+
+### 4. Persistent Data
 
 WireAdmin store configurations at `/data`. It's important to mount a volume at this location to ensure that
 your data is not lost during container restarts or updates.
@@ -29,21 +44,6 @@ your data is not lost during container restarts or updates.
 
 ```bash
 docker volume create wireadmin-data --driver local
-```
-
-### 3. Download Image
-
-#### Build from source
-
-```bash
-git clone https://github.com/shahradelahi/wireadmin
-docker buildx build --tag litehex/wireadmin .
-```
-
-#### Pull from Docker Hub (recommended)
-
-```bash
-docker pull litehex/wireadmin
 ```
 
 ### 4. Run
