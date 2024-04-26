@@ -25,7 +25,8 @@
   {...$$restProps}
   class={cn(
     'group flex items-center justify-center w-10 aspect-square rounded-md',
-    'bg-gray-200/80 hover:bg-gray-100/50',
+    'bg-gray-200/80 hover:bg-gray-100/50 dark:bg-neutral-800/80 dark:hover:bg-neutral-800/50',
+    'text-neutral-700 dark:text-neutral-300 hover:text-primary dark:hover:text-primary',
     'border border-transparent hover:border-primary',
     'transition-colors duration-200 ease-in-out',
     'cursor-pointer',

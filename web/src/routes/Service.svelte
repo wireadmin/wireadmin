@@ -45,6 +45,6 @@
   </div>
 
   <a href={`/service/${slug}`} title="Manage the Server" class="hidden md:block">
-    <Button variant="ghost" size="sm">Manage</Button>
+    <Button variant="outline" size="sm">Manage</Button>
   </a>
 </div>
