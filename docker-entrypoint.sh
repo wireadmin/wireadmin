@@ -75,12 +75,12 @@ EOF
 fi
 
 # Checking if there is `UI_PASSWORD` environment variable
-# if there was, converting it to hex and storing it to
+# if there was, converting it to sha256 and storing it to
 # the .env
 if [ -n "$UI_PASSWORD" ]; then
   sed -i '/^HASHED_PASSWORD/d' "${ENV_FILE}"
   tee -a "${ENV_FILE}" &>/dev/null <<EOF
-HASHED_PASSWORD=$(printf "%s" "${UI_PASSWORD}" | od -A n -t x1 | tr -d ' \n')
+HASHED_PASSWORD=$(checksum hash -a sha256 -C "${UI_PASSWORD}")
 EOF
   unset UI_PASSWORD
 else
