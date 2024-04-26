@@ -8,6 +8,7 @@ import logger from '$lib/logger';
 import { zod } from 'sveltekit-superforms/adapters';
 import { env } from '$lib/env';
 import { AUTH_COOKIE } from '$lib/constants';
+import { sha256 } from '$lib/hash';
 
 export const load: PageServerLoad = async () => {
   return {
@@ -29,7 +30,7 @@ export const actions: Actions = {
       const { password } = form.data;
 
       const hashed = HASHED_PASSWORD.toLowerCase();
-      const receivedHashed = Buffer.from(password.toString()).toString('hex').toLowerCase();
+      const receivedHashed = sha256(password).toLowerCase();
 
       if (hashed !== receivedHashed) {
         return setError(form, 'password', 'Incorrect password.');

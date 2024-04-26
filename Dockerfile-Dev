@@ -20,7 +20,7 @@ RUN apk add -U --no-cache \
   wireguard-tools \
   tor &&\
   # NPM packages
-  npm install -g @litehex/node-checksum &&\
+  npm install -g @litehex/node-checksum@0.2 &&\
   # Clear APK cache
   rm -rf /var/cache/apk/*
 
