@@ -11,8 +11,8 @@
     "start": "pnpm docker:drop && docker compose -f docker-compose.yml up",
     "docker:build": "docker buildx build --tag wireadmin .",
     "docker:drop": "docker compose rm -fsv",
-    "format": "prettier --write . && pnpm -r format",
-    "format:check": "prettier --check . && pnpm -r format:check"
+    "format": "prettier --write . && pnpm --if-present -r format",
+    "format:check": "prettier --check . && pnpm --if-present -r format:check"
   },
   "keywords": [],
   "license": "GPL-3.0",
