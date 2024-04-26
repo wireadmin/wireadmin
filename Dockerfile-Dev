@@ -1,5 +1,6 @@
 ARG ALPINE_VERSION=3.19
 ARG NODE_VERSION=20
+ARG VERSION=0.0.0-dev
 
 FROM --platform=$BUILDPLATFORM chriswayg/tor-alpine:latest as tor
 
@@ -44,7 +45,6 @@ ENV HOST_HEADER=x-forwarded-host
 
 FROM base AS runner
 
-ENV VERSION=0.0.0-dev
 ENV NODE_ENV=development
 ENV LOG_LEVEL=debug
 
