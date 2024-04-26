@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   release:
-    needs: [ github-registry, docker-hub ]
+    needs: [github-registry, docker-hub]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
