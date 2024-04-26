@@ -1,5 +1,6 @@
 ARG ALPINE_VERSION=3.19
 ARG NODE_VERSION=20
+ARG VERSION=0.0.0-canary
 
 FROM --platform=$BUILDPLATFORM chriswayg/tor-alpine:latest as tor
 
@@ -87,7 +88,6 @@ HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
 VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
 
 # Overwrite package version
-ARG VERSION=0.0.0-canary
 RUN node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('/app/package.json')); pkg.version = process.env.VERSION; fs.writeFileSync('/app/package.json', JSON.stringify(pkg, null, 2));"
 
 # Run the app

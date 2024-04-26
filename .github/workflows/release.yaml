@@ -1,23 +1,44 @@
-name: Build Docker Image
+name: Release Package
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build'
+        required: true
 
 env:
   BUILD_PLATFORMS: linux/amd64,linux/arm64
+  IMAGE_TAG: ${{ github.event.inputs.tag }}
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  ghcr-build:
+  release:
+    needs: [github-registry, docker-hub]
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: 'chore(release): version package'
+          title: 'chore(release): version package'
+          publish: changeset publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.PRIVATE_TOKEN }}
 
+  github-registry:
+    name: Push to GitHub Container Registry
+    runs-on: ubuntu-latest
     env:
       IMAGE_NAME: shahradelahi/wireadmin
-
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v3
@@ -29,10 +50,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.PRIVATE_TOKEN }}
 
-      - run: |
-          echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
-          echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-
       - name: Push to GitHub Container Registry
         uses: docker/build-push-action@v5
         with:
@@ -40,17 +57,14 @@ jobs:
           file: ./Dockerfile
           push: true
           platforms: ${{ env.BUILD_PLATFORMS }}
+          args: VERSION=${{ env.IMAGE_TAG }}
           tags: ghcr.io/${{ env.IMAGE_NAME }}:latest,ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-  docker-build:
+  docker-hub:
+    name: Push to DockerHub
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     env:
       IMAGE_NAME: litehex/wireadmin
-
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v3
@@ -62,10 +76,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - run: |
-          echo "Labeling image with TAG: ${GITHUB_REF#refs/tags/v}"
-          echo "IMAGE_TAG=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-
       - name: Push to DockerHub
         uses: docker/build-push-action@v5
         with:
@@ -73,4 +83,5 @@ jobs:
           file: ./Dockerfile
           push: true
           platforms: ${{ env.BUILD_PLATFORMS }}
+          args: VERSION=${{ env.IMAGE_TAG }}
           tags: docker.io/${{ env.IMAGE_NAME }}:latest,docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
