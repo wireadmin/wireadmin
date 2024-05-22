@@ -4,7 +4,7 @@
 
 SCREEN_NAME="$1"
 LIMIT="${2:-100}"
-SCRIPT=$(basename "${0}")
+SCRIPT=$(basename "$0")
 
 if [ -z "$SCREEN_NAME" ]; then
   echo "Usage: ${SCRIPT} <screen_name>"
