@@ -5,7 +5,7 @@ on:
     branches:
       - canary
 
-concurrency: "${{ github.workflow }}-${{ github.ref }}"
+concurrency: '${{ github.workflow }}-${{ github.ref }}'
 
 env:
   GHCR_SLUG: ghcr.io/wireadmin/wireadmin
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install Dependencies
         run: pnpm install
@@ -34,8 +34,8 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          commit: "chore(release): version package"
-          title: "chore(release): version package"
+          commit: 'chore(release): version package'
+          title: 'chore(release): version package'
           publish: pnpm ci:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
