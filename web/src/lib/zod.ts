@@ -1,15 +1,5 @@
 import type { ZodError } from 'zod';
 
-// export function zodErrorToResponse(res: NextApiResponse, z: ZodError) {
-//   return res
-//      .status(400)
-//      .json({
-//        ok: false,
-//        message: 'Bad Request',
-//        details: zodErrorMessage(z)
-//      })
-// }
-
 export function zodEnumError(message: string) {
   return { message };
 }

@@ -2,6 +2,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
   import { onMount } from 'svelte';
+  import { LoaderCircle } from 'lucide-svelte';
 
   export let name: string;
   export let slug: string;
@@ -37,7 +38,7 @@
     </div>
     <div class={'flex col-span-4 items-center justify-end'}>
       {#if healthy === undefined}
-        <i class="fas fa-spinner animate-spin" />
+        <LoaderCircle class={'h-4 w-4 animate-spin'} />
       {:else}
         <Badge variant={healthy ? 'success' : 'destructive'} />
       {/if}

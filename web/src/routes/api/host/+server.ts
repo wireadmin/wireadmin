@@ -1,7 +1,9 @@
-import type { RequestHandler } from '@sveltejs/kit';
-import logger from '$lib/logger';
-import { execa } from 'execa';
 import 'dotenv/config';
+
+import type { RequestHandler } from '@sveltejs/kit';
+import { execa } from 'execa';
+
+import logger from '$lib/logger';
 
 export const GET: RequestHandler = async () => {
   let { WG_HOST } = process.env;

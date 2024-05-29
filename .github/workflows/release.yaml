@@ -1,87 +1,100 @@
 name: Release Package
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to build'
-        required: true
+  push:
+    branches:
+      - canary
+
+concurrency: '${{ github.workflow }}-${{ github.ref }}'
 
 env:
-  BUILD_PLATFORMS: linux/amd64,linux/arm64
-  IMAGE_TAG: ${{ github.event.inputs.tag }}
-
-permissions:
-  contents: read
-  packages: write
+  DOCKERHUB_SLUG: shahradel/wireadmin
+  GHCR_SLUG: ghcr.io/wireadmin/wireadmin
 
 jobs:
   release:
-    needs: [github-registry, docker-hub]
+    if: github.repository == 'wireadmin/wireadmin'
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
         with:
-          fetch-depth: 0
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1
         with:
           commit: 'chore(release): version package'
           title: 'chore(release): version package'
-          publish: changeset publish
+          publish: pnpm ci:publish
         env:
-          GITHUB_TOKEN: ${{ secrets.PRIVATE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  github-registry:
-    name: Push to GitHub Container Registry
+  build:
+    name: Build & Publish
     runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: shahradelahi/wireadmin
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        package: ${{ fromJson(needs.release.outputs.publishedPackages) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.PRIVATE_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push to GitHub Container Registry
-        uses: docker/build-push-action@v5
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          context: .
-          file: ./Dockerfile
+          images: |
+            ${{ env.DOCKERHUB_SLUG }}
+            ${{ env.GHCR_SLUG }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ matrix.package.version }}
+
+      - name: Build and push
+        uses: docker/bake-action@v4
+        with:
+          files: |
+            ./docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+          targets: image-all
           push: true
-          platforms: ${{ env.BUILD_PLATFORMS }}
-          args: VERSION=${{ env.IMAGE_TAG }}
-          tags: ghcr.io/${{ env.IMAGE_NAME }}:latest,ghcr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-  docker-hub:
-    name: Push to DockerHub
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: litehex/wireadmin
-    steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-buildx-action@v3
+      - name: Check manifest
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_SLUG }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ env.GHCR_SLUG }}:${{ steps.meta.outputs.version }}
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          registry: docker.io
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push to DockerHub
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          platforms: ${{ env.BUILD_PLATFORMS }}
-          args: VERSION=${{ env.IMAGE_TAG }}
-          tags: docker.io/${{ env.IMAGE_NAME }}:latest,docker.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      - name: Inspect image
+        run: |
+          docker pull ${{ env.DOCKERHUB_SLUG }}:${{ steps.meta.outputs.version }}
+          docker image inspect ${{ env.DOCKERHUB_SLUG }}:${{ steps.meta.outputs.version }}
+          docker pull ${{ env.GHCR_SLUG }}:${{ steps.meta.outputs.version }}
+          docker image inspect ${{ env.GHCR_SLUG }}:${{ steps.meta.outputs.version }}

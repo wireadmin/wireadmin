@@ -1,10 +1,12 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { getServers, WGServer } from '$lib/wireguard';
-import logger from '$lib/logger';
+
+import { errorBox } from '$lib/logger';
+import { WG_STORE } from '$lib/storage';
+import { WGServer } from '$lib/wireguard';
 
 export const GET: RequestHandler = async () => {
   try {
-    for (const { id } of await getServers()) {
+    for (const { id } of await WG_STORE.listServers()) {
       const wg = new WGServer(id);
       const server = await wg.get();
       const hasInterface = await wg.isUp();
@@ -19,7 +21,7 @@ export const GET: RequestHandler = async () => {
       }
     }
   } catch (e) {
-    logger.error('APIFailed: HealthCheck:', e);
+    errorBox(e);
     return new Response('FAILED', { status: 500, headers: { 'Content-Type': 'text/plain' } });
   }
 

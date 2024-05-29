@@ -1,95 +1,90 @@
 ARG ALPINE_VERSION=3.19
+ARG LYREBIRD_VERSION=0.2.0
 ARG NODE_VERSION=20
-ARG VERSION=0.0.0-canary
 
-FROM --platform=$BUILDPLATFORM chriswayg/tor-alpine:latest as tor
-
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as base
-LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
-WORKDIR /app
-
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as node
 ENV TZ=UTC
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
+RUN apk update \
+  && apk upgrade \
+  && apk add -U --no-cache \
+    iptables net-tools \
+    screen logrotate bash \
+    wireguard-tools \
+    dnsmasq \
+    tor \
+  && rm -rf /var/cache/apk/*
 
-COPY --from=tor /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
-COPY --from=tor /usr/local/bin/meek-server /usr/local/bin/meek-server
+FROM --platform=${BUILDPLATFORM} golang:alpine AS pluggables
+ARG LYREBIRD_VERSION
+RUN apk update \
+  && apk upgrade \
+  && apk add -U --no-cache \
+    bash \
+    make \
+  && rm -rf /var/cache/apk/*
+SHELL ["/bin/bash", "-c"]
+RUN <<EOT
+  set -ex
+  cd /tmp
 
-# Install required packages
-RUN apk add -U --no-cache \
-  iproute2 iptables net-tools \
-  screen curl bash \
-  wireguard-tools \
-  tor &&\
-  # NPM packages
-  npm install -g @litehex/node-checksum@0.2 &&\
-  # Clear APK cache
-  rm -rf /var/cache/apk/*
+  # Lyrebird - https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird
+  wget "https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/-/archive/lyrebird-$LYREBIRD_VERSION/lyrebird-lyrebird-$LYREBIRD_VERSION.tar.gz"
+  tar -xvf lyrebird-lyrebird-$LYREBIRD_VERSION.tar.gz
+  pushd lyrebird-lyrebird-$LYREBIRD_VERSION || exit 1
+  make build -e VERSION=$LYREBIRD_VERSION
+  cp ./lyrebird /usr/local/bin
+  popd || exit 1
 
-COPY /config/torrc.template /etc/tor/torrc.template
+  cp -rv /go/bin /usr/local/bin
+  rm -rf /go
+  rm -rf /tmp/*
+EOT
 
-# Copy user scripts
-COPY /bin /usr/local/bin
-RUN chmod -R +x /usr/local/bin
-
-COPY web/package.json web/pnpm-lock.yaml ./
-
-# Base env
-ENV PROTOCOL_HEADER=x-forwarded-proto
-ENV HOST_HEADER=x-forwarded-host
-
-
-FROM base AS build
-
-# Setup Pnpm - Pnpm only used for build stage
+FROM node AS build
+WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
-
 COPY web .
-
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile \
-    # build
-    && mkdir -p /data \
-    && echo gA== > /data/storage.b64 \
-    && NODE_ENV=production pnpm run build \
-    # Omit devDependencies
-    && pnpm prune --prod \
-    # Move the goods to a temporary location
-    && mv node_modules /tmp/node_modules \
-    && mv build /tmp/build \
-    # Remove everything else
-    && rm -rf ./*
+  && NODE_ENV=production pnpm build \
+  && pnpm prune --prod \
+  && cp -R node_modules build package.json /tmp \
+  && rm -rf ./*
 
+FROM node
+WORKDIR /app
 
-FROM base AS release
+COPY --from=pluggables /usr/local/bin/lyrebird /usr/local/bin/lyrebird
+COPY rootfs /
 
-# Copy the goods from the build stage
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=x-forwarded-host
+ENV NODE_ENV=production
+ENV LOG_LEVEL=error
+
+# Copy the goodies from the build stage
+COPY --from=build /tmp/package.json package.json
 COPY --from=build /tmp/node_modules node_modules
 COPY --from=build /tmp/build build
 
 # Fix permissions
-RUN mkdir -p /data && chmod 700 /data
-RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
-RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
+RUN mkdir -p /data/ /etc/tor/torrc.d/ /var/log/wireadmin/ \
+  && chmod 700 /data/ \
+  && chmod -R 400 /etc/tor/ \
+  && touch /var/log/wireadmin/web.log
 
-ENV NODE_ENV=production
-ENV LOG_LEVEL=error
+RUN echo '*  *  *  *  *    /usr/bin/env logrotate /etc/logrotate.d/rotator' >/etc/crontabs/root
 
 # Setup entrypoint
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Healthcheck
-HEALTHCHECK --interval=60s --timeout=3s --start-period=20s --retries=3 \
- CMD curl -f http://127.0.0.1:3000/api/health || exit 1
-
 # Volumes
-VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
-
-# Overwrite package version
-RUN node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('/app/package.json')); pkg.version = process.env.VERSION; fs.writeFileSync('/app/package.json', JSON.stringify(pkg, null, 2));"
+VOLUME ["/etc/tor", "/var/lib/tor", "/data"]
 
 # Run the app
 EXPOSE 3000/tcp
-CMD [ "npm", "run", "start" ]
+CMD [ "node", "/app/build/index.js" ]

@@ -2,6 +2,8 @@
   import { cn } from '$lib/utils';
   import { createEventDispatcher } from 'svelte';
   import type { ZodEffects, ZodString } from 'zod';
+  import { SquarePenIcon } from 'lucide-svelte';
+  import { Button } from '$lib/components/ui/button';
 
   export let editMode: boolean = false;
   export let schema: ZodString | ZodEffects<any>;
@@ -40,7 +42,7 @@
       editMode ? 'block' : 'hidden',
       'w-full ring-2 ring-neutral-800 ring-offset-2 rounded transition-colors duration-200 ease-in-out outline-transparent',
       inputClass,
-      error && 'ring-red-500 rounded',
+      error && 'ring-red-500 rounded'
     )}
     {value}
     on:keydown={(e) => {
@@ -60,14 +62,16 @@
     }}
   />
 
-  <i
-    class="fal fa-pen-to-square text-sm opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-primary cursor-pointer"
-    role="button"
-    tabindex="0"
+  <Button
+    class="opacity-0 group-hover:opacity-100 text-gray-400/80 group-hover:text-primary"
     aria-roledescription="Edit"
+    size="none"
+    variant="ghost"
     on:click={handleEnterEditMode}
     on:keydown={(e) => {
       if (e.key === 'Enter') handleEnterEditMode();
     }}
-  />
+  >
+    <SquarePenIcon class="h-4 w-4" />
+  </Button>
 </div>

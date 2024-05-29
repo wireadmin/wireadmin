@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Peer } from '$lib/typings';
+  import type { Peer, WgServer } from '$lib/typings';
   import { CopiableText } from '$lib/components/copiable-text';
   import { EditableText } from '$lib/components/editable-text';
   import { NameSchema } from '$lib/wireguard/schema';
@@ -8,12 +8,10 @@
   import { getPeerConf } from '$lib/wireguard/utils';
   import { QRCodeDialog } from '$lib/components/qrcode-dialog';
   import { cn } from '$lib/utils';
+  import { DownloadIcon, QrCodeIcon, Trash2Icon, UserIcon } from 'lucide-svelte';
 
   export let peer: Peer;
-
-  export let serverKey: string;
-  export let serverPort: number;
-  export let serverDNS: string | null;
+  export let server: WgServer;
 
   export let conf: string | undefined = undefined;
 
@@ -22,9 +20,9 @@
   onMount(async () => {
     conf = await getPeerConf({
       ...peer,
-      serverPublicKey: serverKey,
-      port: serverPort,
-      dns: serverDNS,
+      serverPublicKey: server.publicKey,
+      port: server.listen,
+      dns: server.dns,
     });
   });
 
@@ -59,14 +57,14 @@
 <div
   class={cn(
     'flex items-center justify-between p-4 rounded-md',
-    'border border-input bg-background hover:bg-accent/30 hover:text-accent-foreground',
+    'border border-input bg-background hover:bg-accent/30 hover:text-accent-foreground'
   )}
 >
   <div class="flex items-center gap-x-2">
     <div
-      class={'w-12 aspect-square flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}
+      class={'w-12 h-12 flex items-center justify-center mr-4 rounded-full bg-gray-200 max-md:hidden'}
     >
-      <i class={'fas fa-user text-gray-400 text-lg'} />
+      <UserIcon class="text-gray-400 text-lg" />
     </div>
 
     <div class="h-full flex flex-col justify-between col-span-4 gap-y-1.5">
@@ -88,18 +86,18 @@
     <!-- QRCode -->
     <QRCodeDialog let:builder content={conf}>
       <PeerActionButton builders={[builder]} disabled={isLoading}>
-        <i class={'fal fa-qrcode'} />
+        <QrCodeIcon class="w-4 h-4" />
       </PeerActionButton>
     </QRCodeDialog>
 
     <!-- Download -->
     <PeerActionButton disabled={isLoading} on:click={handleDownload}>
-      <i class={'fal fa-download'} />
+      <DownloadIcon class="w-4 h-4" />
     </PeerActionButton>
 
     <!-- Remove -->
     <PeerActionButton loading={isLoading} on:click={handleRemove}>
-      <i class={'fal fa-trash-can'} />
+      <Trash2Icon class="w-4 h-4" />
     </PeerActionButton>
   </div>
 </div>

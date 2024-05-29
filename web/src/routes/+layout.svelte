@@ -4,6 +4,6 @@
   import { ModeWatcher } from 'mode-watcher';
 </script>
 
-<ModeWatcher />
+<ModeWatcher defaultMode="system" />
 <slot />
 <Toaster />

@@ -5,20 +5,22 @@
   "private": true,
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "dev": "pnpm docker:drop && docker compose -f docker-compose.yml -f docker-compose.dev.yml up",
-    "dev:image": "docker buildx build --tag wireadmin -f Dockerfile-Dev .",
-    "build": "pnpm docker:build",
-    "start": "pnpm docker:drop && docker compose -f docker-compose.yml up",
-    "docker:build": "docker buildx build --tag wireadmin .",
-    "docker:drop": "docker compose rm -fsv",
-    "format": "prettier --write . && pnpm --if-present -r format",
-    "format:check": "prettier --check . && pnpm --if-present -r format:check"
+    "dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --force-recreate",
+    "dev:image": "docker buildx build --tag ghcr.io/wireadmin/wireadmin:dev -f Dockerfile-Dev .",
+    "build": "docker buildx build --tag ghcr.io/wireadmin/wireadmin .",
+    "start": "docker compose -f docker-compose.yml up --force-recreate",
+    "format": "prettier --write .",
+    "format:check": "prettier --check . ",
+    "ci:publish": "pnpm build && changeset publish"
   },
   "keywords": [],
   "license": "GPL-3.0",
-  "devDependencies": {
+  "dependencies": {
     "@changesets/cli": "^2.27.1",
+    "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
     "prettier": "^3.2.5",
-    "prettier-plugin-svelte": "^3.2.2"
+    "prettier-plugin-sh": "^0.14.0",
+    "prettier-plugin-svelte": "^3.2.2",
+    "prettier-plugin-tailwindcss": "^0.5.14"
   }
 }

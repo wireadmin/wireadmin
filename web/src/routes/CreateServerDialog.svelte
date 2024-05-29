@@ -28,8 +28,8 @@
   import { Input } from '$lib/components/ui/input';
   import { zodClient } from 'sveltekit-superforms/adapters';
   import { Switch } from '$lib/components/ui/switch';
+  import { ChevronRightIcon, LoaderCircle } from 'lucide-svelte';
 
-  let loading: boolean = false;
   let dialogOpen = false;
 
   export let data: SuperValidated<Infer<CreateServerSchemaType>>;
@@ -37,15 +37,10 @@
   const form = superForm(data, {
     dataType: 'json',
     validators: zodClient(createServerSchema),
-    onSubmit: () => {
-      loading = true;
-    },
     onError: (e) => {
-      loading = false;
       console.error('Client-side: FormError:', e);
     },
     onResult: ({ result }) => {
-      loading = false;
       if (result.type === 'success') {
         dialogOpen = false;
         toast.success('Server created successfully!');
@@ -56,7 +51,7 @@
     },
   });
 
-  const { form: formData, enhance } = form;
+  const { form: formData, enhance, submitting } = form;
 </script>
 
 <Dialog bind:open={dialogOpen}>
@@ -101,16 +96,20 @@
           <FormLabel>Port</FormLabel>
           <Input {...attrs} bind:value={$formData.port} placeholder={'e.g. 51820'} type={'text'} />
         </FormControl>
-        <FormDescription>This is the port that the WireGuard server will listen on.</FormDescription
-        >
+        <FormDescription>
+          This is the port that the WireGuard server will listen on.
+        </FormDescription>
         <FormFieldErrors />
       </FormField>
 
       <Collapsible>
         <CollapsibleTrigger asChild let:builder>
           <Button builders={[builder]} variant="ghost" size="sm" class="mb-4 -mr-2">
-            <i
-              class={cn('far fa-cog mr-2', builder['data-state'] === 'open' ? 'animate-spin' : '')}
+            <ChevronRightIcon
+              class={cn(
+                'mr-2 h-4 w-4 duration-200 ease-in-out transform',
+                builder['data-state'] === 'open' ? 'rotate-90' : 'rotate-0'
+              )}
             />
             <span>Advanced Options</span>
           </Button>
@@ -118,21 +117,28 @@
 
         <CollapsibleContent class="space-y-6">
           <FormField {form} name={'tor'}>
-            <FormControl let:attrs>
-              <Switch {...attrs} bind:checked={$formData.tor} />
-              <FormLabel>Use Tor</FormLabel>
-            </FormControl>
+            <div class="flex items-center space-x-2">
+              <FormControl let:attrs>
+                <Switch {...attrs} bind:checked={$formData.tor} />
+                <FormLabel>Use Tor</FormLabel>
+              </FormControl>
+            </div>
             <FormDescription>This will route all outgoing traffic through Tor.</FormDescription>
           </FormField>
 
           <FormField {form} name={'dns'}>
             <FormControl let:attrs>
               <FormLabel>DNS</FormLabel>
-              <Input placeholder={'e.g. 1.1.1.1'} type={'text'} />
+              <Input
+                {...attrs}
+                bind:value={$formData.dns}
+                placeholder={'e.g. 9.9.9.9, 9.9.9.10'}
+                type={'text'}
+              />
             </FormControl>
-            <FormDescription
-              >Optional. This is the DNS server that will be pushed to clients.</FormDescription
-            >
+            <FormDescription>
+              Optional. This is the DNS server that will be pushed to clients.
+            </FormDescription>
             <FormFieldErrors />
           </FormField>
 
@@ -148,9 +154,8 @@
       </Collapsible>
 
       <DialogFooter>
-        <FormButton>
-          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}
-          ></i>
+        <FormButton disabled={$submitting}>
+          <LoaderCircle class={cn('mr-2 h-4 w-4 animate-spin', !$submitting && 'hidden')} />
           Create
         </FormButton>
       </DialogFooter>

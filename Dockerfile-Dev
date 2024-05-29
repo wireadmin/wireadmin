@@ -1,57 +1,42 @@
 ARG ALPINE_VERSION=3.19
 ARG NODE_VERSION=20
-ARG VERSION=0.0.0-dev
 
-FROM --platform=$BUILDPLATFORM chriswayg/tor-alpine:latest as tor
-
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as base
-LABEL Maintainer="Shahrad Elahi <https://github.com/shahradelahi>"
-WORKDIR /app
-
+FROM --platform=$BUILDPLATFORM shahradel/torproxy:latest as tor
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as node
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apk update \
+  && apk upgrade \
+  && apk add -U --no-cache \
+    iptables net-tools \
+    screen logrotate bash \
+    wireguard-tools \
+    dnsmasq \
+    tor \
+  && rm -rf /var/cache/apk/*
 
-COPY --from=tor /usr/local/bin/obfs4proxy /usr/local/bin/obfs4proxy
-COPY --from=tor /usr/local/bin/meek-server /usr/local/bin/meek-server
-
-# Install required packages
-RUN apk add -U --no-cache \
-  iproute2 iptables net-tools \
-  screen vim curl bash \
-  wireguard-tools \
-  tor &&\
-  # NPM packages
-  npm install -g @litehex/node-checksum@0.2 &&\
-  # Clear APK cache
-  rm -rf /var/cache/apk/*
-
-# Copy Tor Configs
-COPY /config/torrc.template /etc/tor/torrc.template
-COPY /config/obfs4-bridges.conf /etc/torrc.d/obfs4-bridges.conf
-
-# Copy user scripts
-COPY /bin /usr/local/bin
-RUN chmod -R +x /usr/local/bin
+FROM node
+WORKDIR /app
 
 # Setup Pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-# Base env
+ENV NODE_ENV=development
+ENV LOG_LEVEL=debug
 ENV PROTOCOL_HEADER=x-forwarded-proto
 ENV HOST_HEADER=x-forwarded-host
 
-
-FROM base AS runner
-
-ENV NODE_ENV=development
-ENV LOG_LEVEL=debug
+COPY --from=tor /usr/local/bin/lyrebird /usr/local/bin/lyrebird
+COPY rootfs /
 
 # Fix permissions
-RUN mkdir -p /data && chmod 700 /data
-RUN mkdir -p /etc/torrc.d && chmod -R 400 /etc/torrc.d
-RUN mkdir -p /var/vlogs && touch /var/vlogs/web && chmod -R 600 /var/vlogs
+RUN mkdir -p /data/ && chmod 700 /data/
+RUN mkdir -p /etc/tor/torrc.d/ && chmod -R 400 /etc/tor/
+RUN mkdir -p /var/log/wireadmin/ && touch /var/log/wireadmin/web.log
+
+RUN echo '*  *  *  *  *    /usr/bin/env logrotate /etc/logrotate.d/rotator' > /etc/crontabs/root
 
 # Setup entrypoint
 COPY docker-entrypoint.sh /entrypoint.sh
@@ -59,7 +44,7 @@ RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Volumes
-VOLUME ["/etc/torrc.d", "/data", "/var/vlogs"]
+VOLUME ["/etc/tor", "/var/lib/tor", "/data"]
 
 # Run the app
 EXPOSE 5173/tcp

@@ -1,22 +1,18 @@
-import { type Actions, error, fail } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
-import {
-  findServer,
-  generateWgServer,
-  getServers,
-  isIPReserved,
-  isPortReserved,
-  WGServer,
-} from '$lib/wireguard';
+import { error, fail, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
-import { createServerSchema } from './schema';
-import { NameSchema } from '$lib/wireguard/schema';
-import logger from '$lib/logger';
 import { zod } from 'sveltekit-superforms/adapters';
+
+import logger, { errorBox } from '$lib/logger';
+import { WG_STORE } from '$lib/storage';
+import { generateWgServer, isIPReserved, isPortReserved, WGServer } from '$lib/wireguard';
+import { NameSchema } from '$lib/wireguard/schema';
+
+import type { PageServerLoad } from './$types';
+import { createServerSchema } from './schema';
 
 export const load: PageServerLoad = async () => {
   return {
-    servers: getServers(),
+    servers: await WG_STORE.listServers(),
     form: await superValidate(zod(createServerSchema)),
   };
 };
@@ -27,15 +23,15 @@ export const actions: Actions = {
     const serverId = (form.get('id') ?? '').toString();
     const name = (form.get('name') ?? '').toString();
 
-    const server = await findServer(serverId ?? '');
+    const server = await WG_STORE.get(serverId);
     if (!server) {
-      logger.error('Actions: RenameServer: Server not found');
-      return error(404, 'Not found');
+      logger.error(`WebUI: Actions: RenameServer: Server not found. Id: ${serverId}`);
+      throw error(404, 'Not found');
     }
 
     if (!NameSchema.safeParse(name).success) {
       logger.error('Actions: RenameServer: Server name is invalid');
-      return error(400, 'Bad Request');
+      throw error(400, 'Bad Request');
     }
 
     const wg = new WGServer(server.id);
@@ -76,7 +72,7 @@ export const actions: Actions = {
         serverId,
       };
     } catch (e) {
-      logger.error(e);
+      errorBox(e);
       return setError(form, 'Unhandled Exception');
     }
   },

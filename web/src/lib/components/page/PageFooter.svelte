@@ -12,7 +12,7 @@
   </a>
   <DotDivider className="font-bold text-gray-400" />
   <a
-    href={'https://github.com/shahradelahi/wireadmin'}
+    href={'https://github.com/wireadmin/wireadmin'}
     title={'Github'}
     class={'px-2 font-medium text-gray-400/80 hover:text-gray-500 text-xs'}
   >

@@ -1,19 +1,22 @@
-import { type Actions, error, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
-import { findServer, generateWgKey, WGServer } from '$lib/wireguard';
-import { NameSchema } from '$lib/wireguard/schema';
+import { error, redirect, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
-import { createPeerSchema } from './schema';
-import logger from '$lib/logger';
 import { zod } from 'sveltekit-superforms/adapters';
+
+import logger, { errorBox } from '$lib/logger';
+import { WG_STORE } from '$lib/storage';
+import { generateWgKey, WGServer } from '$lib/wireguard';
+import { NameSchema } from '$lib/wireguard/schema';
+
+import type { PageServerLoad } from './$types';
+import { createPeerSchema } from './schema';
 
 export const load: PageServerLoad = async ({ params }) => {
   const { serverId } = params;
-  const exists = WGServer.exists(serverId ?? '');
 
+  const exists = await WGServer.exists(serverId ?? '');
   if (!exists) {
     logger.warn(`Server not found. Redirecting to home page. ServerId: ${serverId}`);
-    throw redirect(303, '/');
+    error(404, { message: 'Not found' });
   }
 
   const wg = new WGServer(serverId);
@@ -39,9 +42,9 @@ export const load: PageServerLoad = async ({ params }) => {
 export const actions: Actions = {
   rename: async ({ request, params }) => {
     const { serverId } = params;
-    const server = await findServer(serverId ?? '');
+    const server = await WG_STORE.get(serverId ?? '');
     if (!server) {
-      logger.error('Server not found');
+      logger.error(`Actions: Rename: Server not found. ServerId: ${serverId}`);
       throw error(404, 'Not found');
     }
 
@@ -65,16 +68,16 @@ export const actions: Actions = {
 
       return { ok: true };
     } catch (e) {
-      logger.error('Exception:', e);
+      errorBox(e);
       throw error(500, 'Unhandled Exception');
     }
   },
   remove: async ({ request, params }) => {
     const { serverId } = params;
 
-    const server = await findServer(serverId ?? '');
+    const server = await WG_STORE.get(serverId ?? '');
     if (!server) {
-      console.error('Server not found');
+      logger.error(`Actions: Remove: Server not found. ServerId: ${serverId}`);
       throw error(404, 'Not found');
     }
 
@@ -89,7 +92,7 @@ export const actions: Actions = {
 
       return { ok: true };
     } catch (e) {
-      console.error('Exception:', e);
+      errorBox(e);
       throw error(500, 'Unhandled Exception');
     }
   },
@@ -97,13 +100,13 @@ export const actions: Actions = {
     const { serverId } = params;
 
     try {
-      const server = await findServer(serverId ?? '');
+      const server = await WG_STORE.get(serverId ?? '');
       if (server) {
         const wg = new WGServer(server.id);
         await wg.remove();
       }
     } catch (e) {
-      logger.error(e);
+      errorBox(e);
       throw error(500, 'Unhandled Exception');
     }
 
@@ -112,7 +115,7 @@ export const actions: Actions = {
   'change-server-state': async ({ request, params }) => {
     const { serverId } = params;
 
-    const server = await findServer(serverId ?? '');
+    const server = await WG_STORE.get(serverId ?? '');
     if (!server) {
       logger.warn(`Action: ChangeState: Server not found. ServerId: ${serverId}`);
       throw redirect(303, '/');
@@ -157,7 +160,7 @@ export const actions: Actions = {
   create: async (event) => {
     const form = await superValidate(event, zod(createPeerSchema));
     if (!form.valid) {
-      logger.warn('CreatePeer: Bad Request: failed to validate form');
+      logger.warn('Action: Create: failed to validate form.');
       return setError(form, 'Bad Request');
     }
 
@@ -165,15 +168,15 @@ export const actions: Actions = {
     const { name } = form.data;
 
     try {
-      const server = await findServer(serverId ?? '');
+      const server = await WG_STORE.get(serverId ?? '');
       if (!server) {
-        logger.error(`Server not found. ServerId: ${serverId}`);
+        logger.error(`Action: Create: Server not found. ServerId: ${serverId}`);
         return setError(form, 'Server not found');
       }
 
       const freeAddress = await WGServer.getFreePeerIp(server.id);
       if (!freeAddress) {
-        logger.error(`No free addresses. ServerId: ${serverId}`);
+        logger.error('No free addresses.');
         return setError(form, 'No free addresses');
       }
 
@@ -191,16 +194,13 @@ export const actions: Actions = {
       });
 
       if (!addedPeer) {
-        logger.error(`Failed to add peer. ServerId: ${serverId}`);
+        logger.error(`Action: Create: Failed to add peer. ServerId: ${serverId}`);
         return setError(form, 'Failed to add peer');
       }
 
       return { form };
     } catch (e) {
-      logger.error({
-        message: `Exception: CreatePeer. ServerId: ${serverId}`,
-        exception: e,
-      });
+      errorBox(e);
       return setError(form, 'Unhandled Exception');
     }
   },

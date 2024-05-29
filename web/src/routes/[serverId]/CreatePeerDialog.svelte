@@ -21,6 +21,7 @@
   import toast from 'svelte-french-toast';
   import { zodClient } from 'sveltekit-superforms/adapters';
   import { Input } from '$lib/components/ui/input';
+  import { LoaderCircle } from 'lucide-svelte';
 
   let loading: boolean = false;
   export let open = false;
@@ -48,7 +49,7 @@
     },
   });
 
-  const { form: formData, enhance } = form;
+  const { form: formData, enhance, submitting } = form;
 
   const handleSuccess = async () => {
     await invalidateAll();
@@ -80,9 +81,8 @@
       </FormField>
 
       <DialogFooter>
-        <FormButton>
-          <i class={cn(loading ? 'far fa-arrow-rotate-right animate-spin' : 'far fa-plus', 'mr-2')}
-          ></i>
+        <FormButton disabled={$submitting}>
+          <LoaderCircle class={cn('mr-2 h-4 w-4 animate-spin', !$submitting && 'hidden')} />
           Create
         </FormButton>
       </DialogFooter>

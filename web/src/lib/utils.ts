@@ -1,7 +1,7 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { clsx, type ClassValue } from 'clsx';
 import { cubicOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
+import { twMerge } from 'tailwind-merge';
 
 export function isJson(data: any): boolean {
   if (typeof data !== 'string') {
@@ -36,7 +36,7 @@ type FlyAndScaleParams = {
 
 export const flyAndScale = (
   node: Element,
-  params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 },
+  params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 }
 ): TransitionConfig => {
   const style = getComputedStyle(node);
   const transform = style.transform === 'none' ? '' : style.transform;

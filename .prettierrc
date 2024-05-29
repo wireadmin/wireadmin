@@ -1,9 +1,11 @@
 {
+  "$schema": "https://json.schemastore.org/prettierrc",
   "useTabs": false,
   "semi": true,
   "singleQuote": true,
   "jsxSingleQuote": true,
-  "trailingComma": "all",
+  "trailingComma": "es5",
+  "endOfLine": "lf",
   "printWidth": 100,
   "overrides": [
     {
@@ -12,6 +14,25 @@
         "parser": "markdown",
         "printWidth": 79
       }
+    },
+    {
+      "files": "*.svelte",
+      "options": {
+        "parser": "svelte",
+        "plugins": ["prettier-plugin-svelte"]
+      }
+    },
+    {
+      "files": "Dockerfile",
+      "options": {
+        "spaceRedirects": false
+      }
     }
+  ],
+  "importOrder": ["<THIRD_PARTY_MODULES>", "", "^types$", "^\\$lib/(.*)$", "^@/(.*)$", "", "^[./]"],
+  "plugins": [
+    "@ianvs/prettier-plugin-sort-imports",
+    "prettier-plugin-tailwindcss",
+    "prettier-plugin-sh"
   ]
 }

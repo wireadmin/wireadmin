@@ -1,15 +1,14 @@
+import { createWriteStream, promises } from 'node:fs';
+import { dirname } from 'node:path';
+import { trySafe } from 'p-safe';
 import pino, { type Logger, type LoggerOptions } from 'pino';
 import pretty from 'pino-pretty';
-import { createWriteStream } from 'node:fs';
-import { resolve } from 'node:path';
-import { fsAccess, fsTouch } from '$lib/fs-extra';
 
-const LOG_LEVEL = process.env.LOG_LEVEL || 'trace';
-const LOG_FILE_PATH = process.env.LOG_FILE_PATH || '/var/vlogs/web';
-const LOG_COLORS = process.env.LOG_COLORS || 'true';
+import { env } from '$lib/env';
+import { fsAccess } from '$lib/utils/fs-extra';
 
 const options: LoggerOptions = {
-  level: LOG_LEVEL,
+  level: env.LOG_LEVEL,
   customLevels: {
     trace: 10,
     info: 30,
@@ -25,25 +24,41 @@ const jsonLevels = JSON.stringify(options.customLevels);
 const levelsInString = jsonLevels.replaceAll('"', '').slice(0, -1).slice(1);
 
 const prettyStream = pretty({
-  colorize: LOG_COLORS === 'true',
+  colorize: env.LOG_COLORS === 'true',
   customLevels: levelsInString,
 });
 
 let logger: Logger = pino(options, pino.multistream([prettyStream]));
 
-if (fsAccess(LOG_FILE_PATH)) {
-  fsTouch(LOG_FILE_PATH).then(() => {
-    logger = pino(
-      options,
-      pino.multistream([
-        prettyStream,
-        createWriteStream(resolve(LOG_FILE_PATH), {
-          flags: 'a',
-        }),
-      ]),
-    );
-  });
-} else {
+export function errorBox<T = Error>(e: T) {
+  console.error('');
+  console.error('---------------- ERROR ----------------');
+  logger.error(e);
+  console.error('---------------- ERROR ----------------');
+  console.error('');
+}
+
+const { error } = await trySafe(async () => {
+  const logDir = dirname(env.LOG_FILE_PATH);
+  if (!fsAccess(logDir)) {
+    await promises.mkdir(logDir, { recursive: true });
+  }
+
+  if (!fsAccess(env.LOG_FILE_PATH)) {
+    await promises.writeFile(env.LOG_FILE_PATH, '', { encoding: 'utf-8' });
+  }
+  logger = pino(
+    options,
+    pino.multistream([
+      prettyStream,
+      createWriteStream(env.LOG_FILE_PATH, {
+        flags: 'a',
+      }),
+    ])
+  );
+});
+
+if (error) {
   logger.warn('Log file is not accessible');
 }
 

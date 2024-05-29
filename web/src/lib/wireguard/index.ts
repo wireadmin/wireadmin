@@ -1,17 +1,18 @@
-import fs from 'node:fs';
+import fs, { promises } from 'node:fs';
 import path from 'path';
 import deepmerge from 'deepmerge';
-import type { Peer, WgKey, WgServer } from '$lib/typings';
-import Network from '$lib/network';
-import { WG_PATH, WG_SEVER_PATH } from '$lib/constants';
-import { dynaJoin, isJson, sleep } from '$lib/utils';
-import { getPeerConf } from '$lib/wireguard/utils';
-import logger from '$lib/logger';
-import { sha256 } from '$lib/hash';
-import { fsAccess } from '$lib/fs-extra';
-import { client } from '$lib/storage';
 import { execa } from 'execa';
 import { ip } from 'node-netkit';
+
+import { WG_PATH } from '$lib/constants';
+import logger from '$lib/logger';
+import Network from '$lib/network';
+import { WG_STORE } from '$lib/storage';
+import type { Peer, WgKey, WgServer } from '$lib/typings';
+import { dynaJoin, sleep } from '$lib/utils';
+import { fsAccess } from '$lib/utils/fs-extra';
+import { sha256 } from '$lib/utils/hash';
+import { getPeerConf } from '$lib/wireguard/utils';
 
 export class WGServer {
   readonly id: string;
@@ -30,34 +31,31 @@ export class WGServer {
     this.peers = new WGPeers(this);
   }
 
-  static exists(id: string): boolean {
-    const serverIds = getServers().map((s) => s.id);
-
-    const exists = serverIds.includes(id);
-
+  static async exists(id: string): Promise<boolean> {
+    const exists = await WG_STORE.exists(id);
     if (!exists) {
-      logger.debug({
-        message: `WGServer: Exists: server by id of ${id} does not exists`,
-        servers: serverIds,
-      });
+      logger.debug(`WireGuard: ServerExists: server does not exists. Id: ${id}`);
+      logger.debug(await WG_STORE.getall());
+      return false;
     }
 
-    return exists;
+    return true;
   }
 
   async get(): Promise<WgServer> {
     if (!fsAccess(WG_PATH)) {
-      logger.debug('WGServer: get: creating wg path');
-      fs.mkdirSync(WG_PATH, { recursive: true, mode: 0o600 });
+      logger.debug(`WireGuard: Get: path does not exists. Path: ${WG_PATH}`);
+      await promises.mkdir(WG_PATH, { recursive: true, mode: 0o600 });
     }
 
-    const server = await findServer(this.id);
+    const server = await WG_STORE.get(this.id);
     if (!server) {
-      throw new Error('WGServer: get: server not found');
+      throw new Error('WireGuard: Server not found');
     }
 
-    if (!fsAccess(resolveConfigPath(server.confId))) {
-      logger.debug('WGServer: get: creating config file');
+    const confPath = resolveConfigPath(server.confId);
+    if (!fsAccess(confPath)) {
+      logger.debug(`WireGuard: Get: config file does not exists. Path: ${confPath}`);
       await this.writeConfigFile(server);
     }
 
@@ -80,7 +78,7 @@ export class WGServer {
     return true;
   }
 
-  async start(): Promise<boolean> {
+  async start(): Promise<void> {
     const server = await this.get();
 
     const HASH = getConfigHash(server.confId);
@@ -97,40 +95,31 @@ export class WGServer {
     await execa(`wg-quick up wg${server.confId}`, { shell: true });
 
     await this.update({ status: 'up' });
-    return true;
   }
 
-  async remove(): Promise<boolean> {
-    const server = await this.get();
-
-    await this.stop();
+  async remove(): Promise<void> {
+    const server = await WG_STORE.get(this.id);
+    if (!server) {
+      logger.warn(`WireGuard: Remove: server not found. Id: ${this.id}`);
+      return;
+    }
 
     if (wgConfExists(server.confId)) {
-      logger.debug('WGServer:Remove: removing config file');
-      fs.unlinkSync(resolveConfigPath(server.confId));
+      logger.debug(`WireGuard: Remove: deleting config file. Id: ${this.id}`);
+      await promises.unlink(resolveConfigPath(server.confId));
     }
 
-    const index = await findServerIndex(this.id);
-    if (typeof index !== 'number') {
-      logger.warn('WGServer:Remove: server index not found');
-      return true;
-    }
-
-    client.ldel(WG_SEVER_PATH, index);
-
-    return true;
+    await WG_STORE.del(this.id);
   }
 
   async update(update: Partial<WgServer>): Promise<boolean> {
-    const server = await this.get();
-
-    const index = await findServerIndex(this.id);
-    if (typeof index !== 'number') {
-      logger.warn('WGServer:Update: server index not found');
+    const server = await WG_STORE.get(this.id);
+    if (!server) {
+      logger.warn(`WireGuard: Update: server not found. Id: ${this.id}`);
       return true;
     }
 
-    client.lset(WG_SEVER_PATH, index, {
+    await WG_STORE.set(this.id, {
       ...deepmerge(server, update),
       peers: update?.peers || server?.peers || [],
       updatedAt: new Date().toISOString(),
@@ -190,7 +179,7 @@ export class WGServer {
   }
 
   static async getFreePeerIp(serverId: string): Promise<string | undefined> {
-    const server = await findServer(serverId);
+    const server = await WG_STORE.get(serverId);
     if (!server) {
       logger.error('WGServer: GetFreePeerIP: no server found');
       return undefined;
@@ -243,18 +232,12 @@ class WGPeers {
         peer.preSharedKey && `PresharedKey = ${peer.preSharedKey}`,
         `AllowedIPs = ${peer.allowedIps}/32`,
         peer.persistentKeepalive && `PersistentKeepalive = ${peer.persistentKeepalive}`,
-      ]),
+      ])
     );
     fs.writeFileSync(confPath, lines.join('\n'), { mode: 0o600 });
     await this.server.update({ confHash: getConfigHash(server.confId) });
 
-    const index = await findServerIndex(this.server.id);
-    if (typeof index !== 'number') {
-      logger.warn('WGPeers:Add: server index not found');
-      return true;
-    }
-
-    client.lset(WG_SEVER_PATH, index, {
+    await WG_STORE.set(this.server.id, {
       ...server,
       peers: [...server.peers, peer],
     });
@@ -271,13 +254,7 @@ class WGPeers {
     const server = await this.server.get();
     const peers = wgPeersStr(server.confId);
 
-    const index = await findServerIndex(this.server.id);
-    if (typeof index !== 'number') {
-      logger.warn('WGPeers:Remove: server index not found');
-      return true;
-    }
-
-    client.lset(WG_SEVER_PATH, index, {
+    await WG_STORE.set(this.server.id, {
       ...server,
       peers: server.peers.filter((p) => p.publicKey !== publicKey),
     });
@@ -306,18 +283,12 @@ class WGPeers {
   async update(publicKey: string, update: Partial<Peer>): Promise<boolean> {
     const server = await this.server.get();
 
-    const index = await findServerIndex(this.server.id);
-    if (typeof index !== 'number') {
-      logger.warn('WGPeers:Update: server index not found');
-      return true;
-    }
-
     const updatedPeers = server.peers.map((p) => {
       if (p.publicKey !== publicKey) return p;
       return deepmerge(p, update);
     });
 
-    client.lset(WG_SEVER_PATH, index, { ...server, peers: updatedPeers });
+    await WG_STORE.set(this.server.id, { ...server, peers: updatedPeers });
     await this.storePeers(publicKey, updatedPeers);
 
     if (server.status === 'up') {
@@ -334,7 +305,7 @@ class WGPeers {
   }
 
   async generateConfig(peerId: string): Promise<string | undefined> {
-    const server = await findServer(this.server.id);
+    const server = await WG_STORE.get(this.server.id);
     if (!server) {
       logger.error('WGPeers:GeneratePeerConfig: server not found');
       return undefined;
@@ -476,28 +447,6 @@ function wgConfExists(configId: number): boolean {
   return fsAccess(confPath);
 }
 
-/**
- * Used to read /etc/wireguard/*.conf and sync them with our
- * redis server.
- */
-async function syncServers(): Promise<boolean> {
-  // get files in /etc/wireguard
-  const files = fs.readdirSync(WG_PATH);
-  // filter files that start with wg and end with .conf
-  const reg = new RegExp(/^wg(\d+)\.conf$/);
-  const confs = files.filter((f) => reg.test(f));
-  // read all confs
-  const servers = await Promise.all(confs.map((f) => readWgConf(parseInt(f.match(reg)![1]))));
-
-  // remove old servers
-  client.del(WG_SEVER_PATH);
-
-  // save all servers to redis
-  client.lpush(WG_SEVER_PATH, servers);
-
-  return true;
-}
-
 function wgPeersStr(configId: number): string[] {
   const confPath = path.resolve(WG_PATH, `wg${configId}.conf`);
   const conf = fs.readFileSync(confPath, 'utf-8');
@@ -531,7 +480,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   const uuid = crypto.randomUUID();
 
   logger.debug(
-    `WireGuard: GenerateWgServer: creating server with id: ${uuid} and confId: ${confId}`,
+    `WireGuard: GenerateWgServer: creating server with id: ${uuid} and confId: ${confId}`
   );
 
   let server: WgServer = {
@@ -572,7 +521,7 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
   // save server config
   logger.debug('WireGuard: GenerateWgServer: saving server to storage');
   logger.debug(server);
-  client.lpush(WG_SEVER_PATH, server);
+  await WG_STORE.set(uuid, server);
 
   const CONFIG_PATH = resolveConfigPath(confId);
 
@@ -598,17 +547,20 @@ export async function generateWgServer(config: GenerateWgServerParams): Promise<
 }
 
 export async function isIPReserved(ip: string): Promise<boolean> {
-  const addresses = getServers().map((s) => s.address);
+  const severs = await WG_STORE.listServers();
+  const addresses = severs.map((s) => s.address);
   return addresses.includes(ip);
 }
 
 export async function isPortReserved(port: number): Promise<boolean> {
-  const inUsePorts = [await Network.inUsePorts(), getServers().map((s) => Number(s.listen))].flat();
+  const severs = await WG_STORE.listServers();
+  const inUsePorts = [await Network.inUsePorts(), severs.map((s) => Number(s.listen))].flat();
   return inUsePorts.includes(port);
 }
 
 export async function isConfigIdReserved(id: number): Promise<boolean> {
-  const ids = getServers().map((s) => s.confId);
+  const severs = await WG_STORE.listServers();
+  const ids = severs.map((s) => s.confId);
   return ids.includes(id);
 }
 
@@ -651,52 +603,12 @@ export function maxConfId(): number {
   return Math.max(0, ...ids);
 }
 
-export function getServers(): WgServer[] {
-  const rawServers = (client.list(WG_SEVER_PATH) || []) as string[];
-  return rawServers.map((s) => {
-    if (isJson(s)) {
-      return JSON.parse(s);
-    }
-
-    if (typeof s === 'object') {
-      return s;
-    }
-
-    logger.warn('WireGuard: GetServers: invalid server found');
-
-    return null;
-  });
-}
-
-export async function findServerIndex(id: string): Promise<number | undefined> {
-  let index = 0;
-  const servers = getServers();
-  for (const s of servers) {
-    if (s.id === id) {
-      return index;
-    }
-    index++;
-  }
-  return undefined;
-}
-
-export async function findServer(
-  id: string | undefined,
-  hash?: string,
-): Promise<WgServer | undefined> {
-  const servers = getServers();
-  return id
-    ? servers.find((s) => s.id === id)
-    : hash && isJson(hash)
-      ? servers.find((s) => JSON.stringify(s) === hash)
-      : undefined;
-}
-
 export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: string }> {
   const source = `${s.address}/24`;
 
   const route = await ip.route.defaultRoute();
   const wg_inet = `wg${s.confId}`;
+  const loopback = '127.0.0.1';
 
   if (!route) {
     throw new Error('No default route found');
@@ -705,18 +617,44 @@ export async function makeWgIptables(s: WgServer): Promise<{ up: string; down: s
   const { stdout: inet_address } = await execa(`hostname -i | awk '{print $1}'`, { shell: true });
 
   if (s.tor) {
-    const up = dynaJoin([
-      `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
-      `iptables -A INPUT -i ${wg_inet} -s ${source} -m state --state NEW -j ACCEPT`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} --dport 53 -j DNAT --to-destination ${inet_address}:53530`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p tcp -s ${source} -j DNAT --to-destination ${inet_address}:59040`,
-      `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -s ${source} -j DNAT --to-destination ${inet_address}:59040`,
-      `iptables -t nat -A OUTPUT -o lo -j RETURN`,
-      `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
-      `iptables -A OUTPUT -m state --state INVALID -j DROP`,
-      `iptables -A OUTPUT ! -o lo ! -d 127.0.0.1 ! -s 127.0.0.1 -p tcp -m tcp --tcp-flags ACK,FIN ACK,FIN -j DROP`,
-    ]).join('; ');
-    return { up, down: up.replace(/-A/g, '-D') };
+    // https://trac.torproject.org/projects/tor/wiki/doc/TransparentProxy#WARNING
+    // https://lists.torproject.org/pipermail/tor-talk/2014-March/032503.html
+    const out_iface = route.dev;
+    const virt_addr = '10.192.0.0/10';
+    const trans_port = '59040';
+    const dns_port = '53530';
+    const non_tor = '127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16'.split(' ');
+    const resv_iana =
+      '0.0.0.0/8 100.64.0.0/10 169.254.0.0/16 192.0.0.0/24 192.0.2.0/24 192.88.99.0/24 198.18.0.0/15 198.51.100.0/24 203.0.113.0/24 224.0.0.0/4 240.0.0.0/4 255.255.255.255/32'.split(
+        ' '
+      );
+    const up = dynaJoin(
+      [
+        `iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT`,
+        `iptables -t nat -A INPUT -i lo -j ACCEPT`,
+        `iptables -A OUTPUT -d 127.0.0.1/32 -o lo -j ACCEPT`,
+        `iptables -A INPUT -i ${wg_inet} -s ${source} -m state --state NEW -j ACCEPT`,
+        // nat dns requests to Tor
+        `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp --dport 53 -j DNAT --to-destination ${inet_address}:${dns_port}`,
+        // Redirect all other pre-routing and output to Tor's TransPort
+        `iptables -t nat -A PREROUTING -i ${wg_inet} -p tcp -j DNAT --to-destination ${inet_address}:${trans_port}`,
+        `iptables -t nat -A PREROUTING -i ${wg_inet} -p udp -j DNAT --to-destination ${inet_address}:${trans_port}`,
+        // Allow Tor process output
+        `iptables -A OUTPUT -o ${out_iface} -p tcp -m tcp --tcp-flags FIN,SYN,RST,ACK SYN -m state --state NEW -j ACCEPT`,
+        // nat .onion addresses
+        `iptables -t nat -A OUTPUT -d ${virt_addr} -p tcp -m tcp -j DNAT --to-destination ${inet_address}:${trans_port}`,
+        `iptables -A OUTPUT -m state --state ESTABLISHED -j ACCEPT`,
+        `iptables -A OUTPUT -m conntrack --ctstate INVALID -j DROP`,
+        `iptables -A OUTPUT -m state --state INVALID -j DROP`,
+        // Allow lan access for hosts in $non_tor
+        [non_tor, resv_iana].flat().map((n) => `iptables -t nat -A OUTPUT -d ${n} -j RETURN`),
+        // Don't nat the Tor process, the loopback, or the local network
+        `iptables -t nat -A OUTPUT -o lo -j RETURN`,
+        `iptables -A OUTPUT ! -o lo ! -d ${loopback} ! -s ${loopback} -p tcp -m tcp --tcp-flags ACK,FIN ACK,FIN -j DROP`,
+        `iptables -A OUTPUT ! -o lo ! -d ${loopback} ! -s ${loopback} -p tcp -m tcp --tcp-flags ACK,RST ACK,RST -j DROP`,
+      ].flat()
+    ).join('; ');
+    return { up, down: up.replace(/ -A /g, ' -D ') };
   }
 
   const up = dynaJoin([
@@ -755,7 +693,7 @@ export async function genServerConf(server: WgServer): Promise<string> {
     lines.push(`${peer.preSharedKey ? `PresharedKey = ${peer.preSharedKey}` : 'OMIT'}`);
     lines.push(`AllowedIPs = ${peer.allowedIps}/32`);
     lines.push(
-      `${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : 'OMIT'}`,
+      `${peer.persistentKeepalive ? `PersistentKeepalive = ${peer.persistentKeepalive}` : 'OMIT'}`
     );
   });
 

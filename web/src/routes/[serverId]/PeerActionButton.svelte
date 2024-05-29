@@ -2,6 +2,8 @@
   import { cn } from '$lib/utils';
   import { createEventDispatcher } from 'svelte';
   import { Button } from 'bits-ui';
+  import { LoaderCircle } from 'lucide-svelte';
+  import { FormButton } from '$lib/components/ui/form';
 
   type $$Props = Button.Props & {
     disabled?: boolean;
@@ -31,7 +33,7 @@
     'transition-colors duration-200 ease-in-out',
     'cursor-pointer',
     disabled && 'opacity-50 cursor-not-allowed',
-    loading && 'animate-pulse',
+    loading && 'animate-pulse'
   )}
   on:click={handleClick}
   on:keydown={(e) => {
@@ -39,7 +41,7 @@
   }}
 >
   {#if loading}
-    <i class="far fa-spinner-third fa-spin" />
+    <LoaderCircle class={'h-4 w-4 animate-spin'} />
   {:else}
     <slot />
   {/if}

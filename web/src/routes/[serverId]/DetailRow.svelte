@@ -9,7 +9,7 @@
     'flex flex-wrap items-center justify-between gap-2 py-3.5',
     'relative overflow-ellipsis',
     'leading-none',
-    'border-b border-gray-200/80 last:border-none',
+    'border-b border-border last:border-none'
   )}
 >
   <div class={'flex items-center text-gray-400 text-sm col-span-12 md:col-span-3'}>

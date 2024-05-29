@@ -4,7 +4,7 @@
   import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import Peer from './Peer.svelte';
-  import fetchAction from '$lib/fetch-action';
+  import fetchAction from '$lib/utils/fetch-action';
   import DetailRow from './DetailRow.svelte';
   import { Badge } from '$lib/components/ui/badge';
   import { CopiableText } from '$lib/components/copiable-text';
@@ -13,6 +13,15 @@
   import { Empty } from '$lib/components/empty';
   import prettyBytes from 'pretty-bytes';
   import { onDestroy } from 'svelte';
+  import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+  } from '$lib/components/ui/breadcrumb';
+  import { ArrowUpIcon } from 'lucide-svelte';
 
   export let data: PageData;
   let dialogOpen = false;
@@ -87,16 +96,17 @@
 </script>
 
 <div class="flex items-center gap-2 py-4 px-2 leading-none">
-  <a
-    href="/"
-    title="Home"
-    class="space-x-1 font-bold text-sm text-primary hover:text-primary/80 tracking-tight"
-  >
-    <i class="fa-solid fa-chevron-left"></i>
-    <span> Back to Home </span>
-  </a>
-  <i class="fa-regular fa-slash-forward"></i>
-  <span class="mb-0.5"> {data.server.name} </span>
+  <Breadcrumb>
+    <BreadcrumbList>
+      <BreadcrumbItem>
+        <BreadcrumbLink href="/">Home</BreadcrumbLink>
+      </BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem>
+        <BreadcrumbPage>{data.server.name}</BreadcrumbPage>
+      </BreadcrumbItem>
+    </BreadcrumbList>
+  </Breadcrumb>
 </div>
 
 <div class="space-y-3.5">
@@ -106,11 +116,13 @@
     </CardHeader>
 
     <CardContent>
-      {#if data.server.tor}
-        <DetailRow label={'Mode'}>
+      <DetailRow label={'Mode'}>
+        {#if data.server.tor}
           <Badge variant="tor">Tor</Badge>
-        </DetailRow>
-      {/if}
+        {:else}
+          <Badge variant="default">Normal</Badge>
+        {/if}
+      </DetailRow>
 
       <DetailRow label={'IP address'}>
         <pre> {data.server.address}/24 </pre>
@@ -123,11 +135,11 @@
       <DetailRow label={'Total Usage'}>
         <div class="flex items-center gap-3 text-sm">
           <div class="flex items-center gap-x-1.5">
-            <i class="fas fa-arrow-up text-gray-500"></i>
+            <ArrowUpIcon class="h-4 w-4 text-gray-500" />
             <span>{prettyBytes(data.usage.total.tx)}</span>
           </div>
           <div class="flex items-center gap-x-1.5">
-            <i class="fas fa-arrow-down text-gray-500"></i>
+            <ArrowUpIcon class="h-4 w-4 text-gray-500 rotate-180" />
             <span>{prettyBytes(data.usage.total.rx)}</span>
           </div>
         </div>
@@ -139,7 +151,7 @@
 
       <DetailRow label={'Public Key'}>
         <CopiableText value={data.server.publicKey}>
-          <MiddleEllipsis content={data.server.publicKey} maxLength={12} />
+          <MiddleEllipsis content={data.server.publicKey} maxLength={10} />
         </CopiableText>
       </DetailRow>
     </CardContent>
@@ -152,33 +164,38 @@
           size="sm"
           on:click={() => {
             handleChangeState('restart');
-          }}>Restart</Button
-        >
+          }}
+          >Restart
+        </Button>
         <Button
           variant="destructive"
           class="max-md:w-full"
           size="sm"
           on:click={() => {
             handleChangeState('stop');
-          }}>Stop</Button
-        >
+          }}
+          >Stop
+        </Button>
       {:else}
         <Button
-          variant="success"
-          class="max-md:w-full bg-green-500"
+          class="max-md:w-full"
           size="sm"
           on:click={() => {
             handleChangeState('start');
-          }}>Start</Button
+          }}
         >
+          Start
+        </Button>
         <Button
           variant="destructive"
           class="max-md:w-full"
           size="sm"
           on:click={() => {
             handleChangeState('remove');
-          }}>Remove</Button
+          }}
         >
+          Remove
+        </Button>
       {/if}
     </CardFooter>
   </Card>
@@ -192,9 +209,7 @@
         {#each data.server.peers as peer}
           <Peer
             {peer}
-            serverKey={data.server.publicKey}
-            serverPort={data.server.listen}
-            serverDNS={data.server.dns}
+            server={data.server}
             on:rename={({ detail }) => {
               handleRename(peer.id.toString(), detail);
             }}

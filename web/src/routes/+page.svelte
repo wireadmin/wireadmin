@@ -5,9 +5,11 @@
   import Service from './Service.svelte';
   import { Empty } from '$lib/components/empty';
   import Server from './Server.svelte';
-  import fetchAction from '$lib/fetch-action';
+  import fetchAction from '$lib/utils/fetch-action';
   import CreateServerDialog from './CreateServerDialog.svelte';
   import { Button } from '$lib/components/ui/button';
+  import { PlusIcon } from 'lucide-svelte';
+  import { DnsmasqIcon, OnionIcon } from '$lib/components/iconset';
 
   export let data: PageData;
 
@@ -35,8 +37,8 @@
     <h2 class={'font-bold text-xl'}>Hello there 👋</h2>
 
     <CreateServerDialog data={data.form} let:builder>
-      <Button builders={[builder]}>
-        <i class="fas fa-plus mr-2"></i>
+      <Button builders={[builder]} size="sm">
+        <PlusIcon class="mr-2" />
         Create Server
       </Button>
     </CreateServerDialog>
@@ -60,6 +62,7 @@
         </CardContent>
       {/if}
     </Card>
+
     <Card>
       <CardHeader>
         <CardTitle>Services</CardTitle>
@@ -67,10 +70,15 @@
       <CardContent>
         <Service name="Tor" slug="tor">
           <svelte:fragment slot="icon">
-            <i class={'fa-solid fa-onion text-purple-700 text-xl'} />
+            <OnionIcon class="h-6 w-6" />
+          </svelte:fragment>
+        </Service>
+        <Service name="Dnsmasq" slug="dnsmasq">
+          <svelte:fragment slot="icon">
+            <DnsmasqIcon class="h-6 w-6" />
           </svelte:fragment>
         </Service>
       </CardContent>
     </Card>
-  </div></BasePage
->
+  </div>
+</BasePage>

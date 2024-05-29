@@ -1,5 +1,6 @@
-import { NameSchema } from '$lib/wireguard/schema';
 import { z } from 'zod';
+
+import { NameSchema } from '$lib/wireguard/schema';
 
 export const createPeerSchema = z.object({
   name: NameSchema,

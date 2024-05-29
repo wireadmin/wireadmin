@@ -10,6 +10,12 @@ concurrency:
   group: '${{ github.workflow }}-${{ github.event.number || github.sha }}'
   cancel-in-progress: true
 
+env:
+  BUILD_PLATFORMS: linux/amd64,linux/arm64
+  DOCKERHUB_SLUG: shahradel/wireadmin
+  GHCR_SLUG: ghcr.io/wireadmin/wireadmin
+  TAG: dev
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -24,25 +30,37 @@ jobs:
           cache: 'pnpm'
 
       - run: pnpm -r install --frozen-lockfile
-      - run: pnpm --if-present format:check
-      - run: pnpm --if-present lint
+      - run: pnpm format:check
 
   image:
+    if: github.repository == 'wireadmin/wireadmin'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
 
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.PRIVATE_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image
+      - name: Build & Publish
         uses: docker/build-push-action@v5
         with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           context: .
           file: ./Dockerfile
-          push: false
+          push: ${{ github.event_name != 'pull_request' }}
+          platforms: '${{ env.BUILD_PLATFORMS }}'
+          tags: '${{ env.GHCR_SLUG }}:${{ env.TAG }},${{ env.DOCKERHUB_SLUG }}:${{ env.TAG }}'

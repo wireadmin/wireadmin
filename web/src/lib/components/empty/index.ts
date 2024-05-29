@@ -1,7 +1,8 @@
-import Root from './empty.svelte';
+import type { HTMLAttributes } from 'svelte/elements';
+
 import Description from './empty-description.svelte';
 import SimpleImage from './empty-simple-img.svelte';
-import type { HTMLAttributes } from 'svelte/elements';
+import Root from './empty.svelte';
 
 interface Props extends HTMLAttributes<HTMLDivElement> {
   description?: string | null;

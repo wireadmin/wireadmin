@@ -7,6 +7,8 @@
   import { Badge } from '$lib/components/ui/badge';
   import { createEventDispatcher } from 'svelte';
   import { cn } from '$lib/utils';
+  import { LayersIcon } from 'lucide-svelte';
+  import { OnionIcon } from '$lib/components/iconset';
 
   export let server: WgServer;
   export let addressPort: string = `${server.address}:${server.listen}`;
@@ -19,15 +21,15 @@
     <div class="flex grow">
       <div
         class={cn(
-          'relative w-12 aspect-square',
+          'relative w-12 h-12 aspect-square',
           'flex items-center justify-center mr-4 ',
           'bg-gray-200 max-md:hidden',
-          'rounded-full',
+          'rounded-full'
         )}
       >
-        <i class={'fa-solid fa-server text-gray-400 text-xl'} />
+        <LayersIcon class="text-gray-400 text-xl" />
         {#if server.tor}
-          <i class="absolute bottom-3.5 right-2 w-3 h-3 fa-solid fa-onion text-purple-700" />
+          <OnionIcon class="absolute bottom-2 right-2 w-4 h-4" />
         {/if}
       </div>
 

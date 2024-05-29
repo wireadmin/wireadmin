@@ -4,7 +4,7 @@
 
   import { toggleMode } from 'mode-watcher';
   import { Button } from '$lib/components/ui/button';
-  import { cn } from '$lib/utils';
+  import { LogOutIcon } from 'lucide-svelte';
 
   export let showLogout: boolean = false;
 </script>
@@ -18,12 +18,12 @@
 
     <div class={'flex items-center gap-x-3'}>
       <a
-        href={'https://github.com/shahradelahi/wireadmin'}
+        href={'https://github.com/wireadmin/wireadmin'}
         title={'Giv me a star on Github'}
         class="hidden md:block"
       >
         <img
-          src={'https://img.shields.io/github/stars/shahradelahi/wireadmin.svg?style=social&label=Star'}
+          src={'https://img.shields.io/github/stars/wireadmin/wireadmin.svg?style=social&label=Star'}
           alt={'Gimme a Star'}
         />
       </a>
@@ -41,17 +41,8 @@
       {#if showLogout}
         <a href="/logout" rel="external" title="Logout">
           <Button variant="ghost" class="group text-sm/2 gap-x-2 font-medium">
-            <i
-              class={cn(
-                'far fa-arrow-right-from-arc text-sm mr-0.5',
-                'text-neutral-500 group-hover:text-neutral-800',
-                'dark:text-neutral-400 dark:group-hover:text-neutral-100',
-              )}
-            ></i>
-            <span
-              class="text-neutral-700 hover:text-neutral-800 dark:text-neutral-100 dark:hover:text-neutral-100"
-              >Logout</span
-            >
+            <LogOutIcon class={'w-4 h-4 mr-0.5'} />
+            Logout
           </Button>
         </a>
       {/if}

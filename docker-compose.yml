@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   wireadmin:
     environment:
@@ -7,16 +6,21 @@ services:
       - WG_HOST=localhost
       # ⚠️ Required:
       # You can use `openssl rand -base64 8` to generate a secure password
-      - UI_PASSWORD=super-secret-password
+      - ADMIN_PASSWORD=super-secret-password
 
-    image: wireadmin
+    image: ghcr.io/wireadmin/wireadmin
     container_name: wireadmin
     restart: unless-stopped
     volumes:
-      - persist-data:/data
+      - wireadmin-data:/data
+      - tor-data:/var/lib/tor
     ports:
-      - '51820:51820/udp'
       - '3000:3000/tcp'
+      # Dnsmasq
+      #- '53:53/udp'
+      #- '53:53/tcp'
+      # WireGuard
+      - '51820:51820/udp'
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -25,5 +29,5 @@ services:
       - net.ipv4.conf.all.src_valid_mark=1
 
 volumes:
-  persist-data:
-    driver: local
+  wireadmin-data:
+  tor-data:

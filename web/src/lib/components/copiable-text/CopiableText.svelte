@@ -1,5 +1,7 @@
 <script lang="ts">
   import { cn } from '$lib/utils';
+  import { ClipboardCopyIcon } from 'lucide-svelte';
+  import { Button } from '$lib/components/ui/button';
 
   export let showInHover: boolean = false;
   export let rootClass: string | undefined = undefined;
@@ -12,20 +14,23 @@
   };
 </script>
 
-<div class={cn('group flex items-center', rootClass)}>
+<div class={cn('group flex items-center gap-3', rootClass)}>
   <slot />
-  <i
+  <Button
     aria-roledescription="Copy to clipboard"
-    role="button"
-    tabindex="0"
-    class={cn(
-      'ml-2 mb-0.5 far fa-copy cursor-pointer text-gray-400/80 hover:text-primary',
-      showInHover && 'group-hover:opacity-100 opacity-0',
-      className,
-    )}
+    size="none"
+    variant="ghost"
     on:click={handleCopy}
     on:keydown={(e) => {
       if (e.key === 'Enter') handleCopy();
     }}
-  />
+  >
+    <ClipboardCopyIcon
+      class={cn(
+        'h-4 w-4 cursor-pointer text-gray-400/80 hover:text-primary',
+        showInHover && 'group-hover:opacity-100 opacity-0',
+        className
+      )}
+    />
+  </Button>
 </div>
