@@ -7,17 +7,15 @@ ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apk update \
   && apk upgrade \
+  && apk add -U --no-cache \
+    iptables net-tools \
+    screen logrotate bash \
+    wireguard-tools \
+    dnsmasq \
+    tor \
   && rm -rf /var/cache/apk/*
 
-FROM node as base
-RUN apk add -U --no-cache \
-  iptables net-tools \
-  screen bash \
-  wireguard-tools \
-  tor \
-  && rm -rf /var/cache/apk/*
-
-FROM base AS build
+FROM node AS build
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -29,28 +27,28 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
   && mv build /tmp/build \
   && rm -rf ./*
 
-FROM base
+FROM node
 WORKDIR /app
 
 COPY --from=tor /usr/local/bin/lyrebird /usr/local/bin/lyrebird
+COPY rootfs /
 
-COPY /config/torrc.template /etc/tor/torrc.template
-
-# Base env
 ENV PROTOCOL_HEADER=x-forwarded-proto
 ENV HOST_HEADER=x-forwarded-host
 ENV NODE_ENV=production
 ENV LOG_LEVEL=error
 
-# Copy the goods from the build stage
+# Copy the goodies from the build stage
 COPY --from=build /tmp/package.json package.json
 COPY --from=build /tmp/node_modules node_modules
 COPY --from=build /tmp/build build
 
 # Fix permissions
-RUN mkdir -p /data && chmod 700 /data
-RUN mkdir -p /etc/tor/torrc.d && chmod -R 400 /etc/tor/torrc.d
-RUN mkdir -p /var/log/wireadmin && touch /var/log/wireadmin/web.log
+RUN mkdir -p /data/ && chmod 700 /data/
+RUN mkdir -p /etc/tor/torrc.d/ && chmod -R 400 /etc/tor/
+RUN mkdir -p /var/log/wireadmin/ && touch /var/log/wireadmin/web.log
+
+RUN echo '*  *  *  *  *    /usr/bin/env logrotate /etc/logrotate.d/rotator' > /etc/crontabs/root
 
 # Setup entrypoint
 COPY docker-entrypoint.sh /entrypoint.sh

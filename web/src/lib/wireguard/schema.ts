@@ -40,6 +40,7 @@ export const DnsSchema = z
   .regex(IPV4_REGEX, {
     message: 'DNS must be a valid IPv4 address',
   })
+  .default('9.9.9.11')
   .optional();
 
 export const MtuSchema = z

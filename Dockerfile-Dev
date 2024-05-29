@@ -7,18 +7,15 @@ ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apk update \
   && apk upgrade \
+  && apk add -U --no-cache \
+    iptables net-tools \
+    screen logrotate bash \
+    wireguard-tools \
+    dnsmasq \
+    tor \
   && rm -rf /var/cache/apk/*
 
-FROM node as base
-RUN apk add -U --no-cache \
-  iptables net-tools \
-  screen logrotate vim bash \
-  wireguard-tools \
-  tor &&\
-  # Clear APK cache
-  rm -rf /var/cache/apk/*
-
-FROM base
+FROM node
 WORKDIR /app
 
 # Setup Pnpm
@@ -32,15 +29,12 @@ ENV PROTOCOL_HEADER=x-forwarded-proto
 ENV HOST_HEADER=x-forwarded-host
 
 COPY --from=tor /usr/local/bin/lyrebird /usr/local/bin/lyrebird
-
-# Copy Tor Configs
-COPY /config/torrc.template /etc/tor/torrc.template
-COPY /config/obfs4-bridges.conf /etc/tor/torrc.d/obfs4-bridges.conf
+COPY rootfs /
 
 # Fix permissions
-RUN mkdir -p /data && chmod 700 /data
-RUN mkdir -p /etc/tor/torrc.d && chmod -R 400 /etc/tor/torrc.d
-RUN mkdir -p /var/log/wireadmin && touch /var/log/wireadmin/web.log
+RUN mkdir -p /data/ && chmod 700 /data/
+RUN mkdir -p /etc/tor/torrc.d/ && chmod -R 400 /etc/tor/
+RUN mkdir -p /var/log/wireadmin/ && touch /var/log/wireadmin/web.log
 
 RUN echo '*  *  *  *  *    /usr/bin/env logrotate /etc/logrotate.d/rotator' > /etc/crontabs/root
 

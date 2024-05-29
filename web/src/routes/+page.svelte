@@ -9,7 +9,7 @@
   import CreateServerDialog from './CreateServerDialog.svelte';
   import { Button } from '@lib/components/ui/button';
   import { PlusIcon } from 'lucide-svelte';
-  import { OnionIcon } from '@lib/components/iconset';
+  import { DnsmasqIcon, OnionIcon } from '@lib/components/iconset';
 
   export let data: PageData;
 
@@ -62,6 +62,7 @@
         </CardContent>
       {/if}
     </Card>
+
     <Card>
       <CardHeader>
         <CardTitle>Services</CardTitle>
@@ -69,7 +70,12 @@
       <CardContent>
         <Service name="Tor" slug="tor">
           <svelte:fragment slot="icon">
-            <OnionIcon class="text-purple-700 text-xl" />
+            <OnionIcon class="h-6 w-6" />
+          </svelte:fragment>
+        </Service>
+        <Service name="Dnsmasq" slug="dnsmasq">
+          <svelte:fragment slot="icon">
+            <DnsmasqIcon class="h-6 w-6" />
           </svelte:fragment>
         </Service>
       </CardContent>

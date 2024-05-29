@@ -7,7 +7,7 @@
   import { Badge } from '@lib/components/ui/badge';
   import { createEventDispatcher } from 'svelte';
   import { cn } from '@lib/utils';
-  import { Layers, LayersIcon } from 'lucide-svelte';
+  import { LayersIcon } from 'lucide-svelte';
   import { OnionIcon } from '@lib/components/iconset';
 
   export let server: WgServer;
@@ -29,7 +29,7 @@
       >
         <LayersIcon class="text-gray-400 text-xl" />
         {#if server.tor}
-          <OnionIcon class="absolute bottom-2 right-2 w-4 h-4 text-purple-700" />
+          <OnionIcon class="absolute bottom-2 right-2 w-4 h-4" />
         {/if}
       </div>
 

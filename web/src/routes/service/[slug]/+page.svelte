@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from '@lib/components/ui/card';
+  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@lib/components/ui/card';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import fetchAction from '@lib/utils/fetch-action';
   import { Button } from '@lib/components/ui/button';
-  import { CardFooter } from '@lib/components/ui/card';
   import toast from 'svelte-french-toast';
   import { LoaderCircle } from 'lucide-svelte';
   import {
@@ -17,6 +16,8 @@
   } from '@lib/components/ui/breadcrumb';
   import BasePage from '@lib/components/page/BasePage.svelte';
   import { Checkbox } from '@lib/components/ui/checkbox';
+
+  export let data: PageData;
 
   let logElement: HTMLTextAreaElement;
   let logs: string | undefined;
@@ -83,7 +84,6 @@
     }, 1000);
 
     return () => {
-      console.log('clearing interval');
       clearInterval(interval);
     };
   });
@@ -98,7 +98,7 @@
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>Tor</BreadcrumbPage>
+          <BreadcrumbPage>{data.title}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>

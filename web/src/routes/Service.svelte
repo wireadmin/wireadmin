@@ -30,7 +30,7 @@
         <slot name="icon" />
       </div>
 
-      <a href={`/${slug}`} title="Manage" class="my-auto">
+      <a href={`/service/${slug}`} title="Manage" class="my-auto">
         <span class="text-lg font-medium md:text-base hover:text-primary hover:font-medium">
           {name}
         </span>
@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <a href={`/${slug}`} title="Manage the Server" class="hidden md:block">
+  <a href={`/service/${slug}`} title="Manage the Server" class="hidden md:block">
     <Button variant="outline" size="sm">Manage</Button>
   </a>
 </div>
