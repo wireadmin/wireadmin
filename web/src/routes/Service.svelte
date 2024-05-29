@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
+  import { Button } from '@lib/components/ui/button';
+  import { Badge } from '@lib/components/ui/badge';
   import { onMount } from 'svelte';
+  import { LoaderCircle } from 'lucide-svelte';
 
   export let name: string;
   export let slug: string;
@@ -29,7 +30,7 @@
         <slot name="icon" />
       </div>
 
-      <a href={`/service/${slug}`} title="Manage" class="my-auto">
+      <a href={`/${slug}`} title="Manage" class="my-auto">
         <span class="text-lg font-medium md:text-base hover:text-primary hover:font-medium">
           {name}
         </span>
@@ -37,14 +38,14 @@
     </div>
     <div class={'flex col-span-4 items-center justify-end'}>
       {#if healthy === undefined}
-        <i class="fas fa-spinner animate-spin" />
+        <LoaderCircle class={'h-4 w-4 animate-spin'} />
       {:else}
         <Badge variant={healthy ? 'success' : 'destructive'} />
       {/if}
     </div>
   </div>
 
-  <a href={`/service/${slug}`} title="Manage the Server" class="hidden md:block">
+  <a href={`/${slug}`} title="Manage the Server" class="hidden md:block">
     <Button variant="outline" size="sm">Manage</Button>
   </a>
 </div>

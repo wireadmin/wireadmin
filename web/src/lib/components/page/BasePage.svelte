@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { cn } from '$lib/utils';
-  import PageFooter from '$lib/components/page/PageFooter.svelte';
-  import PageHeader from '$lib/components/page/PageHeader.svelte';
+  import { cn } from '@lib/utils';
+  import PageFooter from '@lib/components/page/PageFooter.svelte';
+  import PageHeader from '@lib/components/page/PageHeader.svelte';
 
   export let rootClass: string | undefined = undefined;
   let className: string | undefined = undefined;

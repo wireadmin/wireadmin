@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cn } from '$lib/utils';
+  import { cn } from '@lib/utils';
 
   export let content: string;
   export let maxLength: number = Math.floor(content.length / 2);

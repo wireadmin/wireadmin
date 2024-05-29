@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cn } from '$lib/utils';
+  import { cn } from '@lib/utils';
   import { EmptyDescription, EmptySimpleImage, type Props } from '.';
 
   type $$Props = Props;

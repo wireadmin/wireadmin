@@ -1,14 +1,15 @@
-import type { Actions } from '@sveltejs/kit';
-import { fail } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import { error, fail, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
-import { formSchema } from './schema';
-import { generateToken } from '$lib/auth';
-import logger from '$lib/logger';
 import { zod } from 'sveltekit-superforms/adapters';
-import { env } from '$lib/env';
-import { AUTH_COOKIE } from '$lib/constants';
-import { sha256 } from '$lib/hash';
+
+import { generateToken } from '@lib/auth';
+import { AUTH_COOKIE } from '@lib/constants';
+import { env } from '@lib/env';
+import logger, { errorBox } from '@lib/logger';
+import { sha256 } from '@lib/utils/hash';
+
+import type { PageServerLoad } from './$types';
+import { formSchema } from './schema';
 
 export const load: PageServerLoad = async () => {
   return {
@@ -18,36 +19,40 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
   default: async (event) => {
-    const { cookies } = event;
-    const form = await superValidate(event, zod(formSchema));
+    try {
+      const { cookies } = event;
+      const form = await superValidate(event, zod(formSchema));
 
-    if (!form.valid) {
-      return fail(400, { ok: false, message: 'Bad Request', form });
-    }
+      if (!form.valid) {
+        logger.warn('Action: Login: failed to validate form.');
+        return fail(400, { ok: false, message: 'Bad Request', form });
+      }
 
-    const { HASHED_PASSWORD } = env;
-    if (HASHED_PASSWORD && HASHED_PASSWORD !== '') {
+      const { HASHED_PASSWORD } = env;
       const { password } = form.data;
 
       const hashed = HASHED_PASSWORD.toLowerCase();
       const receivedHashed = sha256(password).toLowerCase();
 
       if (hashed !== receivedHashed) {
+        logger.debug('Action: Login: failed to validate password.');
         return setError(form, 'password', 'Incorrect password.');
       }
-    } else {
-      logger.warn('No password is set!');
+
+      logger.debug(`Action: Login: success. generating token.`);
+      const hour = 60 * 60;
+      const token = await generateToken({ expiresIn: hour });
+
+      cookies.set(AUTH_COOKIE, token, {
+        maxAge: hour,
+        httpOnly: true,
+        path: '/',
+      });
+
+      return { form, ok: true };
+    } catch (e) {
+      errorBox(e);
+      throw error(500, 'Unhandled Exception');
     }
-
-    const token = await generateToken();
-
-    const secure = env.ORIGIN?.startsWith('https://') ?? false;
-    cookies.set(AUTH_COOKIE, token, {
-      secure,
-      httpOnly: true,
-      path: '/',
-    });
-
-    return { form, ok: true };
   },
 };

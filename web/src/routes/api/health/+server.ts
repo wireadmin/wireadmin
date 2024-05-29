@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { getServers, WGServer } from '$lib/wireguard';
-import logger from '$lib/logger';
+
+import logger from '@lib/logger';
+import { getServers, WGServer } from '@lib/wireguard';
 
 export const GET: RequestHandler = async () => {
   try {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { isBetween } from '$lib/utils/number';
-import { IPV4_REGEX, isPrivateIP } from '$lib/utils/ip';
+
+import { IPV4_REGEX, isPrivateIP } from '@lib/utils/ip';
+import { isBetween } from '@lib/utils/number';
 
 export const NameSchema = z
   .string()
@@ -29,7 +30,7 @@ export const PortSchema = z
     },
     {
       message: 'Port must be a valid port number',
-    },
+    }
   );
 
 export const TorSchema = z.boolean().default(false);
