@@ -1,5 +1,5 @@
 ---
-"wireadmin": patch
+"wireadmin": minor
 ---
 
 feat: dark mode
