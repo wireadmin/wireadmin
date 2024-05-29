@@ -6,8 +6,8 @@
   "packageManager": "pnpm@8.15.0",
   "scripts": {
     "dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --force-recreate",
-    "dev:image": "docker buildx build --tag wireadmin -f Dockerfile-Dev .",
-    "build": "docker buildx build --tag wireadmin .",
+    "dev:image": "docker buildx build --tag ghcr.io/wireadmin/wireadmin -f Dockerfile-Dev .",
+    "build": "docker buildx build --tag ghcr.io/wireadmin/wireadmin .",
     "start": "docker compose -f docker-compose.yml up --force-recreate",
     "format": "prettier --write .",
     "format:check": "prettier --check . ",

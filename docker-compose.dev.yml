@@ -1,6 +1,6 @@
 services:
   wireadmin:
-    image: wireadmin
+    image: ghcr.io/wireadmin/wireadmin
     build:
       context: .
       dockerfile: Dockerfile-Dev

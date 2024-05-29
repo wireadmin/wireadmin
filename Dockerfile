@@ -16,6 +16,7 @@ RUN apk update \
   && rm -rf /var/cache/apk/*
 
 FROM node AS build
+WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -23,8 +24,7 @@ COPY web .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile \
   && NODE_ENV=production pnpm build \
   && pnpm prune --prod \
-  && mv node_modules /tmp/node_modules \
-  && mv build /tmp/build \
+  && cp -R node_modules build package.json /tmp \
   && rm -rf ./*
 
 FROM node

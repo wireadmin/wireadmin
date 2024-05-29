@@ -8,7 +8,7 @@ services:
       # You can use `openssl rand -base64 8` to generate a secure password
       - ADMIN_PASSWORD=super-secret-password
 
-    image: wireadmin/wireadmin
+    image: ghcr.io/wireadmin/wireadmin
     container_name: wireadmin
     restart: unless-stopped
     volumes:

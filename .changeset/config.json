@@ -7,7 +7,7 @@
   "access": "restricted",
   "baseBranch": "canary",
   "updateInternalDependencies": "patch",
-  "ignore": ["web"],
+  "ignore": [],
   "privatePackages": {
     "version": true,
     "tag": true
