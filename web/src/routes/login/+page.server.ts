@@ -28,13 +28,10 @@ export const actions: Actions = {
         return fail(400, { ok: false, message: 'Bad Request', form });
       }
 
-      const { HASHED_PASSWORD } = env;
+      const { ADMIN_PASSWORD } = env;
       const { password } = form.data;
 
-      const hashed = HASHED_PASSWORD.toLowerCase();
-      const receivedHashed = sha256(password).toLowerCase();
-
-      if (hashed !== receivedHashed) {
+      if (sha256(ADMIN_PASSWORD).toLowerCase() !== sha256(password).toLowerCase()) {
         logger.debug('Action: Login: failed to validate password.');
         return setError(form, 'password', 'Incorrect password.');
       }

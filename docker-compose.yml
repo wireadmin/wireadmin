@@ -15,8 +15,12 @@ services:
       - wireadmin-data:/data
       - tor-data:/var/lib/tor
     ports:
-      - '51820:51820/udp'
       - '3000:3000/tcp'
+      # Dnsmasq
+      #- '53:53/udp'
+      #- '53:53/tcp'
+      # WireGuard
+      - '51820:51820/udp'
     cap_add:
       - NET_ADMIN
       - SYS_MODULE

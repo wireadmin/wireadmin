@@ -12,7 +12,7 @@ export const env = createEnv({
   server: {
     STORAGE_PATH: z.string().default('/data/storage.pack'),
     AUTH_SECRET: z.string().default(sha256(randomUUID())),
-    HASHED_PASSWORD: z.string().default(sha256('insecure-password')),
+    ADMIN_PASSWORD: z.string().default('insecure-password'),
     // -----
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ORIGIN: z.string().optional(),
