@@ -4,7 +4,7 @@ ARG NODE_VERSION=20
 
 FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as node
 ENV TZ=UTC
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
 RUN apk update \
   && apk upgrade \
   && apk add -U --no-cache \
@@ -24,7 +24,7 @@ RUN apk update \
     make \
   && rm -rf /var/cache/apk/*
 SHELL ["/bin/bash", "-c"]
-RUN << EOT
+RUN <<EOT
   set -ex
   cd /tmp
 
@@ -75,7 +75,7 @@ RUN mkdir -p /data/ /etc/tor/torrc.d/ /var/log/wireadmin/ \
   && chmod -R 400 /etc/tor/ \
   && touch /var/log/wireadmin/web.log
 
-RUN echo '*  *  *  *  *    /usr/bin/env logrotate /etc/logrotate.d/rotator' > /etc/crontabs/root
+RUN echo '*  *  *  *  *    /usr/bin/env logrotate /etc/logrotate.d/rotator' >/etc/crontabs/root
 
 # Setup entrypoint
 COPY docker-entrypoint.sh /entrypoint.sh

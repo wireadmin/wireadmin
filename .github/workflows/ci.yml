@@ -63,4 +63,4 @@ jobs:
           file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           platforms: '${{ env.BUILD_PLATFORMS }}'
-          tags: "${{ env.GHCR_SLUG }}:${{ env.TAG }},${{ env.DOCKERHUB_SLUG }}:${{ env.TAG }}"
+          tags: '${{ env.GHCR_SLUG }}:${{ env.TAG }},${{ env.DOCKERHUB_SLUG }}:${{ env.TAG }}'

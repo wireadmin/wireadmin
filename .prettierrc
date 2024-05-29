@@ -21,6 +21,12 @@
         "parser": "svelte",
         "plugins": ["prettier-plugin-svelte"]
       }
+    },
+    {
+      "files": "Dockerfile",
+      "options": {
+        "spaceRedirects": false
+      }
     }
   ],
   "importOrder": ["<THIRD_PARTY_MODULES>", "", "^types$", "^\\$lib/(.*)$", "^@/(.*)$", "", "^[./]"],
