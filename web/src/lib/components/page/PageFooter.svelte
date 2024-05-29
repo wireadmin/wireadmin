@@ -1,5 +1,5 @@
 <script>
-  import DotDivider from '@lib/components/DotDivider.svelte';
+  import DotDivider from '$lib/components/DotDivider.svelte';
 </script>
 
 <footer class={'flex items-center justify-center'}>

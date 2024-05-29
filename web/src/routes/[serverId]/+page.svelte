@@ -1,16 +1,16 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import CreatePeerDialog from './CreatePeerDialog.svelte';
-  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@lib/components/ui/card';
-  import { Button } from '@lib/components/ui/button';
+  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
+  import { Button } from '$lib/components/ui/button';
   import Peer from './Peer.svelte';
-  import fetchAction from '@lib/utils/fetch-action';
+  import fetchAction from '$lib/utils/fetch-action';
   import DetailRow from './DetailRow.svelte';
-  import { Badge } from '@lib/components/ui/badge';
-  import { CopiableText } from '@lib/components/copiable-text';
-  import { MiddleEllipsis } from '@lib/components/middle-ellipsis';
+  import { Badge } from '$lib/components/ui/badge';
+  import { CopiableText } from '$lib/components/copiable-text';
+  import { MiddleEllipsis } from '$lib/components/middle-ellipsis';
   import { goto, invalidateAll } from '$app/navigation';
-  import { Empty } from '@lib/components/empty';
+  import { Empty } from '$lib/components/empty';
   import prettyBytes from 'pretty-bytes';
   import { onDestroy } from 'svelte';
   import {
@@ -20,7 +20,7 @@
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-  } from '@lib/components/ui/breadcrumb';
+  } from '$lib/components/ui/breadcrumb';
   import { ArrowUpIcon } from 'lucide-svelte';
 
   export let data: PageData;

@@ -1,11 +1,11 @@
 import { Client, HashMap, MSGPack } from 'storage-box';
 import { FsDriver } from 'storage-box/node';
 
-import { WG_SEVER_PATH } from '@lib/constants';
-import { env } from '@lib/env';
-import logger from '@lib/logger';
-import type { WgServer } from '@lib/typings';
-import { isJson } from '@lib/utils';
+import { WG_SEVER_PATH } from '$lib/constants';
+import { env } from '$lib/env';
+import logger from '$lib/logger';
+import type { WgServer } from '$lib/typings';
+import { isJson } from '$lib/utils';
 
 const driver = new FsDriver(env.STORAGE_PATH, { parser: MSGPack });
 

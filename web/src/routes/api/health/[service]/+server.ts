@@ -1,7 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { errorBox } from '@lib/logger';
-import { getService } from '@lib/services';
+import { errorBox } from '$lib/logger';
+import { getService } from '$lib/services';
 
 export const GET: RequestHandler = async ({ params }) => {
   try {

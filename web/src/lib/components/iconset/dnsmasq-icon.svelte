@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Icon from '@lib/components/iconset/icon.svelte';
-  import type { Props } from '@lib/components/iconset';
+  import Icon from '$lib/components/iconset/icon.svelte';
+  import type { Props } from '$lib/components/iconset';
 
   type $$Props = Props;
 </script>

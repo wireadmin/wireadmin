@@ -8,7 +8,7 @@
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from '@lib/components/ui/dialog';
+  } from '$lib/components/ui/dialog';
   import {
     FormButton,
     FormControl,
@@ -16,18 +16,18 @@
     FormField,
     FormFieldErrors,
     FormLabel,
-  } from '@lib/components/ui/form';
-  import { cn } from '@lib/utils';
+  } from '$lib/components/ui/form';
+  import { cn } from '$lib/utils';
   import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
-  } from '@lib/components/ui/collapsible';
-  import { Button } from '@lib/components/ui/button';
+  } from '$lib/components/ui/collapsible';
+  import { Button } from '$lib/components/ui/button';
   import toast from 'svelte-french-toast';
-  import { Input } from '@lib/components/ui/input';
+  import { Input } from '$lib/components/ui/input';
   import { zodClient } from 'sveltekit-superforms/adapters';
-  import { Switch } from '@lib/components/ui/switch';
+  import { Switch } from '$lib/components/ui/switch';
   import { ChevronRightIcon, LoaderCircle } from 'lucide-svelte';
 
   let dialogOpen = false;

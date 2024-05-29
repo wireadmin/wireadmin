@@ -2,11 +2,11 @@ import { error, fail, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 
-import { generateToken } from '@lib/auth';
-import { AUTH_COOKIE } from '@lib/constants';
-import { env } from '@lib/env';
-import logger, { errorBox } from '@lib/logger';
-import { sha256 } from '@lib/utils/hash';
+import { generateToken } from '$lib/auth';
+import { AUTH_COOKIE } from '$lib/constants';
+import { env } from '$lib/env';
+import logger, { errorBox } from '$lib/logger';
+import { sha256 } from '$lib/utils/hash';
 
 import type { PageServerLoad } from './$types';
 import { formSchema } from './schema';

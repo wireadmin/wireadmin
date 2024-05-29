@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cn } from '@lib/utils.js';
+  import { cn } from '$lib/utils.js';
 
   export let name: string | undefined = undefined;
   export let color = 'currentColor';

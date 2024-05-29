@@ -2,10 +2,10 @@ import { error, fail, type Actions } from '@sveltejs/kit';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 
-import logger, { errorBox } from '@lib/logger';
-import { WG_STORE } from '@lib/storage';
-import { generateWgServer, isIPReserved, isPortReserved, WGServer } from '@lib/wireguard';
-import { NameSchema } from '@lib/wireguard/schema';
+import logger, { errorBox } from '$lib/logger';
+import { WG_STORE } from '$lib/storage';
+import { generateWgServer, isIPReserved, isPortReserved, WGServer } from '$lib/wireguard';
+import { NameSchema } from '$lib/wireguard/schema';
 
 import type { PageServerLoad } from './$types';
 import { createServerSchema } from './schema';

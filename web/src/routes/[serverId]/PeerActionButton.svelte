@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { cn } from '@lib/utils';
+  import { cn } from '$lib/utils';
   import { createEventDispatcher } from 'svelte';
   import { Button } from 'bits-ui';
   import { LoaderCircle } from 'lucide-svelte';
-  import { FormButton } from '@lib/components/ui/form';
+  import { FormButton } from '$lib/components/ui/form';
 
   type $$Props = Button.Props & {
     disabled?: boolean;

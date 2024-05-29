@@ -4,15 +4,15 @@ import deepmerge from 'deepmerge';
 import { execa } from 'execa';
 import { ip } from 'node-netkit';
 
-import { WG_PATH } from '@lib/constants';
-import logger from '@lib/logger';
-import Network from '@lib/network';
-import { WG_STORE } from '@lib/storage';
-import type { Peer, WgKey, WgServer } from '@lib/typings';
-import { dynaJoin, sleep } from '@lib/utils';
-import { fsAccess } from '@lib/utils/fs-extra';
-import { sha256 } from '@lib/utils/hash';
-import { getPeerConf } from '@lib/wireguard/utils';
+import { WG_PATH } from '$lib/constants';
+import logger from '$lib/logger';
+import Network from '$lib/network';
+import { WG_STORE } from '$lib/storage';
+import type { Peer, WgKey, WgServer } from '$lib/typings';
+import { dynaJoin, sleep } from '$lib/utils';
+import { fsAccess } from '$lib/utils/fs-extra';
+import { sha256 } from '$lib/utils/hash';
+import { getPeerConf } from '$lib/wireguard/utils';
 
 export class WGServer {
   readonly id: string;

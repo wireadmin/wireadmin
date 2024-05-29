@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 
-import { revokeToken } from '@lib/auth';
-import { AUTH_COOKIE } from '@lib/constants';
+import { revokeToken } from '$lib/auth';
+import { AUTH_COOKIE } from '$lib/constants';
 
 import type { PageServerLoad } from './$types';
 

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { cn } from '@lib/utils';
+  import { cn } from '$lib/utils';
   import { createEventDispatcher } from 'svelte';
   import type { ZodEffects, ZodString } from 'zod';
   import { SquarePenIcon } from 'lucide-svelte';
-  import { Button } from '@lib/components/ui/button';
+  import { Button } from '$lib/components/ui/button';
 
   export let editMode: boolean = false;
   export let schema: ZodString | ZodEffects<any>;

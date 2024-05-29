@@ -1,15 +1,15 @@
 <script lang="ts">
-  import BasePage from '@lib/components/page/BasePage.svelte';
+  import BasePage from '$lib/components/page/BasePage.svelte';
   import type { PageData } from './$types';
-  import { Card, CardContent, CardHeader, CardTitle } from '@lib/components/ui/card';
+  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import Service from './Service.svelte';
-  import { Empty } from '@lib/components/empty';
+  import { Empty } from '$lib/components/empty';
   import Server from './Server.svelte';
-  import fetchAction from '@lib/utils/fetch-action';
+  import fetchAction from '$lib/utils/fetch-action';
   import CreateServerDialog from './CreateServerDialog.svelte';
-  import { Button } from '@lib/components/ui/button';
+  import { Button } from '$lib/components/ui/button';
   import { PlusIcon } from 'lucide-svelte';
-  import { DnsmasqIcon, OnionIcon } from '@lib/components/iconset';
+  import { DnsmasqIcon, OnionIcon } from '$lib/components/iconset';
 
   export let data: PageData;
 

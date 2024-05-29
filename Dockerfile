@@ -24,7 +24,7 @@ RUN apk update \
     make \
   && rm -rf /var/cache/apk/*
 SHELL ["/bin/bash", "-c"]
-RUN <<EOT
+RUN << EOT
   set -ex
   cd /tmp
 

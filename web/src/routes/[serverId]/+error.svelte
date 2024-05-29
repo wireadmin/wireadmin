@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@lib/components/ui/card';
-  import { Empty } from '@lib/components/empty';
-  import { Button } from '@lib/components/ui/button';
+  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
+  import { Empty } from '$lib/components/empty';
+  import { Button } from '$lib/components/ui/button';
 </script>
 
 <Card>

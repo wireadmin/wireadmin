@@ -1,4 +1,4 @@
-import type { WgServer } from '@lib/typings';
+import type { WgServer } from '$lib/typings';
 
 type Peer = WgServer['peers'][0];
 

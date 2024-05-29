@@ -7,7 +7,7 @@ import {
   NameSchema,
   PortSchema,
   TorSchema,
-} from '@lib/wireguard/schema';
+} from '$lib/wireguard/schema';
 
 export const createServerSchema = z.object({
   name: NameSchema,

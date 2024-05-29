@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { Button } from '@lib/components/ui/button';
-  import type { WgServer } from '@lib/typings';
-  import { EditableText } from '@lib/components/editable-text';
-  import { CopiableText } from '@lib/components/copiable-text';
-  import { NameSchema } from '@lib/wireguard/schema';
-  import { Badge } from '@lib/components/ui/badge';
+  import { Button } from '$lib/components/ui/button';
+  import type { WgServer } from '$lib/typings';
+  import { EditableText } from '$lib/components/editable-text';
+  import { CopiableText } from '$lib/components/copiable-text';
+  import { NameSchema } from '$lib/wireguard/schema';
+  import { Badge } from '$lib/components/ui/badge';
   import { createEventDispatcher } from 'svelte';
-  import { cn } from '@lib/utils';
+  import { cn } from '$lib/utils';
   import { LayersIcon } from 'lucide-svelte';
-  import { OnionIcon } from '@lib/components/iconset';
+  import { OnionIcon } from '$lib/components/iconset';
 
   export let server: WgServer;
   export let addressPort: string = `${server.address}:${server.listen}`;

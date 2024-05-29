@@ -1,19 +1,19 @@
 <script lang="ts">
   import { formSchema, type FormSchema } from './schema';
   import { type Infer, superForm, type SuperValidated } from 'sveltekit-superforms';
-  import { Card, CardContent } from '@lib/components/ui/card';
+  import { Card, CardContent } from '$lib/components/ui/card';
   import {
     FormButton,
     FormControl,
     FormField,
     FormFieldErrors,
     FormLabel,
-  } from '@lib/components/ui/form';
+  } from '$lib/components/ui/form';
   import { zodClient } from 'sveltekit-superforms/adapters';
   import { goto } from '$app/navigation';
-  import { Input } from '@lib/components/ui/input';
+  import { Input } from '$lib/components/ui/input';
   import { LoaderCircle, UserIcon } from 'lucide-svelte';
-  import { cn } from '@lib/utils';
+  import { cn } from '$lib/utils';
 
   export let data: SuperValidated<Infer<FormSchema>>;
 

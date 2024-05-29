@@ -1,8 +1,8 @@
 import { promises } from 'node:fs';
 import { execa } from 'execa';
 
-import logger from '@lib/logger';
-import { fsTouch } from '@lib/utils/fs-extra';
+import logger from '$lib/logger';
+import { fsTouch } from '$lib/utils/fs-extra';
 
 export const SERVICES = <const>{
   tor: {

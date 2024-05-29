@@ -3,7 +3,7 @@
   import Moon from 'lucide-svelte/icons/moon';
 
   import { toggleMode } from 'mode-watcher';
-  import { Button } from '@lib/components/ui/button';
+  import { Button } from '$lib/components/ui/button';
   import { LogOutIcon } from 'lucide-svelte';
 
   export let showLogout: boolean = false;

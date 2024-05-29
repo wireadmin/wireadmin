@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { cn } from '@lib/utils';
+  import { cn } from '$lib/utils';
   import { ClipboardCopyIcon } from 'lucide-svelte';
-  import { Button } from '@lib/components/ui/button';
+  import { Button } from '$lib/components/ui/button';
 
   export let showInHover: boolean = false;
   export let rootClass: string | undefined = undefined;

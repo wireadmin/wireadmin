@@ -1,7 +1,7 @@
 import { error, type Actions } from '@sveltejs/kit';
 
-import logger, { errorBox } from '@lib/logger';
-import { clearLogs, getService, logs, restart, type ServiceName } from '@lib/services';
+import logger, { errorBox } from '$lib/logger';
+import { clearLogs, getService, logs, restart, type ServiceName } from '$lib/services';
 
 import type { PageServerLoad } from './$types';
 

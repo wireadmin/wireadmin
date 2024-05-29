@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@lib/components/ui/card';
+  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
-  import fetchAction from '@lib/utils/fetch-action';
-  import { Button } from '@lib/components/ui/button';
+  import fetchAction from '$lib/utils/fetch-action';
+  import { Button } from '$lib/components/ui/button';
   import toast from 'svelte-french-toast';
   import { LoaderCircle } from 'lucide-svelte';
   import {
@@ -13,9 +13,9 @@
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-  } from '@lib/components/ui/breadcrumb';
-  import BasePage from '@lib/components/page/BasePage.svelte';
-  import { Checkbox } from '@lib/components/ui/checkbox';
+  } from '$lib/components/ui/breadcrumb';
+  import BasePage from '$lib/components/page/BasePage.svelte';
+  import { Checkbox } from '$lib/components/ui/checkbox';
 
   export let data: PageData;
 

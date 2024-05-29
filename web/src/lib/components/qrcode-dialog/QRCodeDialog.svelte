@@ -6,11 +6,11 @@
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from '@lib/components/ui/dialog';
-  import { Skeleton } from '@lib/components/ui/skeleton';
+  } from '$lib/components/ui/dialog';
+  import { Skeleton } from '$lib/components/ui/skeleton';
   import { Dialog as DialogPrimitive } from 'bits-ui';
-  import { Button } from '@lib/components/ui/button';
-  import type { SafeReturn } from '@lib/typings';
+  import { Button } from '$lib/components/ui/button';
+  import type { SafeReturn } from '$lib/typings';
 
   const DialogClose = DialogPrimitive.Close;
 

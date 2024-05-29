@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 
-import { WG_AUTH_PATH } from '@lib/constants';
-import { env } from '@lib/env';
-import { storage } from '@lib/storage';
-import { sha256 } from '@lib/utils/hash';
+import { WG_AUTH_PATH } from '$lib/constants';
+import { env } from '$lib/env';
+import { storage } from '$lib/storage';
+import { sha256 } from '$lib/utils/hash';
 
 interface GenerateTokenParams {
   expiresIn: number;

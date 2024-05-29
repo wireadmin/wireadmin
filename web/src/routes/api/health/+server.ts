@@ -1,8 +1,8 @@
 import type { RequestHandler } from '@sveltejs/kit';
 
-import { errorBox } from '@lib/logger';
-import { WG_STORE } from '@lib/storage';
-import { WGServer } from '@lib/wireguard';
+import { errorBox } from '$lib/logger';
+import { WG_STORE } from '$lib/storage';
+import { WGServer } from '$lib/wireguard';
 
 export const GET: RequestHandler = async () => {
   try {

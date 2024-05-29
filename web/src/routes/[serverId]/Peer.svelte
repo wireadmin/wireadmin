@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { Peer, WgServer } from '@lib/typings';
-  import { CopiableText } from '@lib/components/copiable-text';
-  import { EditableText } from '@lib/components/editable-text';
-  import { NameSchema } from '@lib/wireguard/schema';
+  import type { Peer, WgServer } from '$lib/typings';
+  import { CopiableText } from '$lib/components/copiable-text';
+  import { EditableText } from '$lib/components/editable-text';
+  import { NameSchema } from '$lib/wireguard/schema';
   import PeerActionButton from './PeerActionButton.svelte';
   import { createEventDispatcher, onMount } from 'svelte';
-  import { getPeerConf } from '@lib/wireguard/utils';
-  import { QRCodeDialog } from '@lib/components/qrcode-dialog';
-  import { cn } from '@lib/utils';
+  import { getPeerConf } from '$lib/wireguard/utils';
+  import { QRCodeDialog } from '$lib/components/qrcode-dialog';
+  import { cn } from '$lib/utils';
   import { DownloadIcon, QrCodeIcon, Trash2Icon, UserIcon } from 'lucide-svelte';
 
   export let peer: Peer;

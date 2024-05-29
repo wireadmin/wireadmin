@@ -2,9 +2,9 @@ import 'dotenv/config';
 
 import { redirect, type Handle } from '@sveltejs/kit';
 
-import { verifyToken } from '@lib/auth';
-import { AUTH_COOKIE } from '@lib/constants';
-import logger from '@lib/logger';
+import { verifyToken } from '$lib/auth';
+import { AUTH_COOKIE } from '$lib/constants';
+import logger from '$lib/logger';
 
 export const handle: Handle = async ({ event, resolve }) => {
   logger.debug(`-> ${event.request.method} ${event.url.pathname}`);

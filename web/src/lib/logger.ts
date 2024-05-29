@@ -4,8 +4,8 @@ import { trySafe } from 'p-safe';
 import pino, { type Logger, type LoggerOptions } from 'pino';
 import pretty from 'pino-pretty';
 
-import { env } from '@lib/env';
-import { fsAccess } from '@lib/utils/fs-extra';
+import { env } from '$lib/env';
+import { fsAccess } from '$lib/utils/fs-extra';
 
 const options: LoggerOptions = {
   level: env.LOG_LEVEL,

@@ -39,10 +39,12 @@
 
 | Registry                                                                                                | Image                         |
 | ------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| [Docker Hub](https://hub.docker.com/r/shahradel/wireadmin/)                                             | `shahradel/wireadmin`         |
 | [GitHub Container Registry](https://github.com/users/shahradelahi/packages/container/package/cfw-proxy) | `ghcr.io/wireadmin/wireadmin` |
 
 ## Ports
 
+- `53`: Dnsmasq
 - `3000`: WebUI
 
 And for any additional ports of WireGuard instance, should be exposed through Docker.
@@ -64,15 +66,15 @@ docker compose logs -f
 ```shell
 $ docker run -d \
   --name wireadmin \
-  -e WG_HOST= \
-  ADMIN_PASSWORD= \
-  "3000:3000/tcp" \
+  -e WG_HOST="<YOUR_SERVER_IP>" \
+  -e ADMIN_PASSWORD="<ADMIN_PASSWORD>" \
+  -p "3000:3000/tcp" \
   -p "51820:51820/udp" \
   --cap-add=NET_ADMIN \
   --cap-add=SYS_MODULE \
   --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
   --sysctl="net.ipv4.ip_forward=1" \
-  ghcr.io/wireadmin/wireadmin < YOUR_SERVER_IP > -e < ADMIN_PASSWORD > -p
+  ghcr.io/wireadmin/wireadmin
 ```
 
 > 💡 Replace `<YOUR_SERVER_IP>` with the IP address of your server.
@@ -83,13 +85,26 @@ The Web UI will now be available on `http://0.0.0.0:3000`.
 
 ### Persistent Data
 
-WireAdmin store configurations at `/data`. It's important to mount a volume at this location to ensure that
-your data is not lost during container restarts or updates.
+It's important to mount a volume to ensure that your data is not lost during container restarts or updates. Here is the list of required volumes:
+
+- `wireadmin-data`: `/data`
+- `tor-data`: `/var/lib/tor`
 
 To create a docker volume, use the following command:
 
 ```bash
-docker volume create wireadmin-data --driver local
+$ docker volume create "<volume>" --driver local
+```
+
+> 💡 Replace `<volume>` with the name of the volume.
+
+Finally, to mount the volumes with `-v` flag in the `docker run` command:
+
+```bash
+$ docker run -d \
+  -v wireadmin-data:/data \
+  -v tor-data:/var/lib/tor \
+  ghcr.io/wireadmin/wireadmin
 ```
 
 ### Environment variables
@@ -99,7 +114,7 @@ These options can be configured by setting environment variables using `-e KEY="
 | Option            | Description                                                                         | Default             | Optional |
 | ----------------- | ----------------------------------------------------------------------------------- | ------------------- | -------- |
 | `WG_HOST`         | The public IP address of the WireGuard server.                                      | -                   |          |
-| `ADMIN_PASSWORD`  | The password for the admin UI.                                                      | `insecure-password` |          |
+| `ADMIN_PASSWORD`  | The password for the web UI.                                                        | `insecure-password` |          |
 | `HOST`            | The hostname for the WebUI.                                                         | `127.0.0.1`         | ✔️       |
 | `PORT`            | The port for the WebUI.                                                             | `3000`              | ✔️       |
 | `TOR_USE_BRIDGES` | Set this to `1` and then mount the bridges file at `/etc/tor/torrc.d/bridges.conf`. | -                   | ✔️       |
@@ -110,14 +125,14 @@ These options can be configured by setting environment variables using `-e KEY="
 Recreate the container whenever I push an update:
 
 ```bash
-docker compose pull
-docker compose up -d
+$ docker compose pull
+$ docker compose up -d
 ```
 
 ## Contributing
 
 Want to contribute? Awesome! To show your support is to star the project, or to raise issues
-on [GitHub](https://github.com/shahradelahi/docker-cfw-proxy).
+on [GitHub](https://github.com/wireadmin/wireadmin)
 
 Thanks again for your support, it is much appreciated! 🙏
 

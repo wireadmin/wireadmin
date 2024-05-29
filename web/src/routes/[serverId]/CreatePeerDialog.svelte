@@ -8,19 +8,19 @@
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from '@lib/components/ui/dialog';
+  } from '$lib/components/ui/dialog';
   import {
     FormButton,
     FormControl,
     FormField,
     FormFieldErrors,
     FormLabel,
-  } from '@lib/components/ui/form';
-  import { cn } from '@lib/utils';
+  } from '$lib/components/ui/form';
+  import { cn } from '$lib/utils';
   import { invalidateAll } from '$app/navigation';
   import toast from 'svelte-french-toast';
   import { zodClient } from 'sveltekit-superforms/adapters';
-  import { Input } from '@lib/components/ui/input';
+  import { Input } from '$lib/components/ui/input';
   import { LoaderCircle } from 'lucide-svelte';
 
   let loading: boolean = false;

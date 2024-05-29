@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createEnv } from '@t3-oss/env-core';
 import { z } from 'zod';
 
-import { sha256 } from '@lib/utils/hash';
+import { sha256 } from '$lib/utils/hash';
 
 export const env = createEnv({
   runtimeEnv: process.env,
