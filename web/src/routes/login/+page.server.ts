@@ -43,6 +43,7 @@ export const actions: Actions = {
       cookies.set(AUTH_COOKIE, token, {
         maxAge: hour,
         httpOnly: true,
+        secure: false,
         path: '/',
       });
 
