@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "author": "Shahrad Elahi <https://github.com/shahradelahi>",
   "private": true,
-  "packageManager": "pnpm@8.15.0",
+  "packageManager": "pnpm@9.9.0",
   "scripts": {
     "dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --force-recreate",
     "dev:image": "docker buildx build --tag ghcr.io/wireadmin/wireadmin:dev -f Dockerfile-Dev .",
@@ -16,11 +16,11 @@
   "keywords": [],
   "license": "GPL-3.0",
   "dependencies": {
-    "@changesets/cli": "^2.27.1",
-    "@ianvs/prettier-plugin-sort-imports": "^4.2.1",
-    "prettier": "^3.2.5",
+    "@changesets/cli": "^2.27.8",
+    "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+    "prettier": "^3.3.3",
     "prettier-plugin-sh": "^0.14.0",
-    "prettier-plugin-svelte": "^3.2.2",
+    "prettier-plugin-svelte": "^3.2.6",
     "prettier-plugin-tailwindcss": "^0.5.14"
   }
 }
