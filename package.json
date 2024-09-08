@@ -1,6 +1,6 @@
 {
   "name": "wireadmin",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": "Shahrad Elahi <https://github.com/shahradelahi>",
   "private": true,
   "packageManager": "pnpm@9.9.0",
