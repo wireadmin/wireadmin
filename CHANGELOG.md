@@ -1,5 +1,11 @@
 # wireadmin
 
+## 2.0.1
+
+### Patch Changes
+
+- 883bfe4: chore: Update dependencies
+
 ## 2.0.0
 
 ### Major Changes
