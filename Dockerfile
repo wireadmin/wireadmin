@@ -2,26 +2,35 @@ ARG ALPINE_VERSION=3.19
 ARG LYREBIRD_VERSION=0.2.0
 ARG NODE_VERSION=20
 
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as node
+# Get Dockerfile cross-compilation helpers.
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS node
+ARG TARGETPLATFORM
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
-RUN apk update \
-  && apk upgrade \
-  && apk add -U --no-cache \
-    iptables net-tools \
-    screen logrotate bash \
-    wireguard-tools \
-    dnsmasq \
-    tor \
+COPY --from=xx / /
+RUN xx-apk update && xx-apk upgrade && xx-apk add -U --no-cache \
+  iptables net-tools \
+  screen logrotate bash \
+  wireguard-tools \
+  dnsmasq \
+  tor \
+  && xx-verify \
+    /bin/bash \
+    /usr/bin/tor \
+    /usr/sbin/dnsmasq \
+    /usr/local/bin/node \
+    /usr/sbin/logrotate \
   && rm -rf /var/cache/apk/*
 
 FROM --platform=${BUILDPLATFORM} golang:alpine AS pluggables
+ARG TARGETPLATFORM
 ARG LYREBIRD_VERSION
-RUN apk update \
-  && apk upgrade \
-  && apk add -U --no-cache \
-    bash \
-    make \
+COPY --from=xx / /
+RUN xx-apk update && xx-apk upgrade && xx-apk add -U --no-cache \
+  bash \
+  make \
   && rm -rf /var/cache/apk/*
 SHELL ["/bin/bash", "-c"]
 RUN <<EOT
@@ -32,8 +41,10 @@ RUN <<EOT
   wget "https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/-/archive/lyrebird-$LYREBIRD_VERSION/lyrebird-lyrebird-$LYREBIRD_VERSION.tar.gz"
   tar -xvf lyrebird-lyrebird-$LYREBIRD_VERSION.tar.gz
   pushd lyrebird-lyrebird-$LYREBIRD_VERSION || exit 1
+  sed -i 's/ go / xx-go /g' Makefile
   make build -e VERSION=$LYREBIRD_VERSION
   cp ./lyrebird /usr/local/bin
+  xx-verify /usr/local/bin/lyrebird
   popd || exit 1
 
   cp -rv /go/bin /usr/local/bin
@@ -47,7 +58,8 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 COPY web .
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile \
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+  pnpm install --frozen-lockfile \
   && NODE_ENV=production pnpm build \
   && pnpm prune --prod \
   && cp -R node_modules build package.json /tmp \

@@ -1,8 +1,8 @@
 ARG ALPINE_VERSION=3.19
 ARG NODE_VERSION=20
 
-FROM --platform=$BUILDPLATFORM shahradel/torproxy:latest as tor
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as node
+FROM --platform=$BUILDPLATFORM shahradel/torproxy:latest AS tor
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS node
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apk update \
