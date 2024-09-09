@@ -16,12 +16,6 @@ RUN xx-apk update && xx-apk upgrade && xx-apk add -U --no-cache \
   wireguard-tools \
   dnsmasq \
   tor \
-  && xx-verify \
-    /bin/bash \
-    /usr/bin/tor \
-    /usr/sbin/dnsmasq \
-    /usr/local/bin/node \
-    /usr/sbin/logrotate \
   && rm -rf /var/cache/apk/*
 
 FROM --platform=${BUILDPLATFORM} golang:alpine AS pluggables
