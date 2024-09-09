@@ -32,7 +32,7 @@ RUN xx-apk update && xx-apk upgrade && xx-apk add -U --no-cache \
   bash \
   make \
   && rm -rf /var/cache/apk/*
-SHELL ["/bin/bash", "-c"]
+SHELL ["/usr/bin/env","bash", "-c"]
 RUN <<EOT
   set -ex
   cd /tmp
